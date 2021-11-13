@@ -34,7 +34,8 @@ def compute_bound(f) -> int:
             linear_equality_count += n
             variable_count += m
 
-        if node.decl().name() == "=":
+        if node.decl().kind() == Z3_OP_EQ:
+            # found an equality
             linear_equality_count += 1
 
         return max_d, linear_equality_count, variable_count
@@ -49,6 +50,7 @@ def compute_bound(f) -> int:
 
             if child in visited:
                 continue
+
             visited.add(child)
 
             cur_d, cur_n, cur_m = ast_visitor(child)
@@ -63,7 +65,16 @@ def compute_bound(f) -> int:
     return 8 << (d * n * m)
 
 
-def same_div(x_1, x_2):
+def congruent(lhs, rhs, modulo):
+    return (lhs - rhs) % modulo == 0
+
+
+def same_div(x_1, x_2, x, phi):
+
+    def detect_div_constraints(node):
+        if node.decl().kind() == Z3_OP_EQ:
+            pass
+
     # TODO
     pass
 
@@ -79,7 +90,7 @@ def monadic_decomposable(f, x) -> bool:
     print(f.num_args())
     print(f.arg(0))
     print(f.children())
-    print(f.arg(0).children())
+    print(f.arg(5).children())
     print(f.arg(0).arg(0))
 
     return True
@@ -95,7 +106,7 @@ if __name__ == "__main__":
         z >= 0,
         x + 2 * y >= 5,
         z < 5,
-        (x - y) % 2 == 0
+        congruent(x, y, 2)
     ])
 
     if monadic_decomposable(phi, x):
