@@ -1,4 +1,5 @@
 from z3 import *
+from utils import wrap_ast_ref, is_uninterpreted_variable, get_formula_variables
 
 
 def _compute_bound(f) -> int:
@@ -10,7 +11,7 @@ def _compute_bound(f) -> int:
         if is_int_value(node):
             return node.as_long().bit_length(), 0, 0
 
-        if is_const(node) and node.decl().kind() == Z3_OP_UNINTERPRETED:
+        if is_uninterpreted_variable(node):
             # this is a variable
             return 0, 0, 1
 
@@ -23,10 +24,12 @@ def _compute_bound(f) -> int:
 
         for child in node.children():
 
-            if child in visited:
+            child_wrapped = wrap_ast_ref(child)
+
+            if child_wrapped in visited:
                 continue
 
-            visited.add(child)
+            visited.add(child_wrapped)
 
             d, n, m = ast_visitor(child)
 
@@ -48,10 +51,12 @@ def _compute_bound(f) -> int:
 
         for child in f.children():
 
-            if child in visited:
+            child_wrapped = wrap_ast_ref(child)
+
+            if child_wrapped in visited:
                 continue
 
-            visited.add(child)
+            visited.add(child_wrapped)
 
             cur_d, cur_n, cur_m = ast_visitor(child)
 
@@ -67,18 +72,6 @@ def _compute_bound(f) -> int:
 
 def congruent(lhs, rhs, modulo):
     return (lhs - rhs) % modulo == 0
-
-
-# def _substitute_var(f, x, y):
-#
-#     if is_const(f) and f.decl().kind() == Z3_OP_UNINTERPRETED and eq(f, x):
-#         print("Detected variable x", f)
-#         return y
-#
-#     if len(f.children()) == 0:
-#         return f
-#
-#     return f.decl()([_substitute_var(child, x, y) for child in f.children()])
 
 
 def _same_div_transform_constraint(x_1, x_2, x, div_constraint):
@@ -121,10 +114,12 @@ def _same_div(x_1, x_2, x, phi):
 
         for child in node.children():
 
-            if child in visited:
+            child_wrapped = wrap_ast_ref(child)
+
+            if child_wrapped in visited:
                 continue
 
-            visited.add(child)
+            visited.add(child_wrapped)
 
             detect_div_constraints(child)
 
@@ -147,13 +142,24 @@ def monadic_decomposable(f, x) -> bool:
 
     x_1, x_2 = Ints("x_1 x_2")
 
-    s = _same_div(x_1, x_2, x, f)
+    sd = _same_div(x_1, x_2, x, f)
 
-    print(s)
+    vars_except_x = get_formula_variables(f)
+    vars_except_x.remove(wrap_ast_ref(x))
 
-    # TODO
+    mon_dec_formula = Exists([x_1, x_2, *[v.unwrap() for v in vars_except_x]], And(
+        x_1 >= b,
+        x_2 >= b,
+        sd,
+        substitute(f, (x, x_1)),
+        Not(substitute(f, (x, x_2)))
+    ))
 
-    return True
+    print("Final formula:", mon_dec_formula)
+
+    s = Solver()
+    s.add(mon_dec_formula)
+    return s.check() == unsat
 
 
 if __name__ == "__main__":
@@ -168,8 +174,6 @@ if __name__ == "__main__":
         z < 5,
         congruent(x, y, 2)
     ])
-
-    print(phi)
 
     if monadic_decomposable(phi, x):
         print("Monadically decomposable")
