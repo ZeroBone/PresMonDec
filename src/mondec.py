@@ -100,4 +100,5 @@ def test_mondec3(k):
     print("mondec1(", R([x, y]), ") =", res)
 
 
-test_mondec3(500)
+if __name__ == "__main__":
+    test_mondec3(500)

@@ -162,6 +162,67 @@ def monadic_decomposable(f, x) -> bool:
     return s.check() == unsat
 
 
+def _equiv(phi, x, a, b):
+    """
+    Constructs the formula describing the equivalence relation that is finite iff phi
+    is monadically decomposable
+    :param phi: the formula
+    :param x: the variable we want to decompose on
+    :param a: first argument for the equivalence
+    :param b: second argument for the equivalence
+    :return: formula describing the equivalence relation
+    """
+
+    phi_vars_except_x = get_formula_variables(phi)
+    phi_vars_except_x.remove(wrap_ast_ref(x))
+
+    phi_vars_except_x_new = {}
+
+    for v in phi_vars_except_x:
+        phi_vars_except_x_new[v] = Int(v.unwrap().decl().name() + "_pr")
+
+    phi_vars_except_x_new_subs = [(v.unwrap(), phi_vars_except_x_new[v]) for v in phi_vars_except_x]
+
+    implication = Implies(
+        And(
+            substitute(phi, (x, a)),
+            substitute(phi, (x, b), *phi_vars_except_x_new_subs)
+        ),
+        And(
+            substitute(phi, (x, b)),
+            substitute(phi, (x, a), *phi_vars_except_x_new_subs)
+        )
+    )
+
+    return ForAll([*[v.unwrap() for v in phi_vars_except_x],
+                   *[v for v in phi_vars_except_x_new.values()]], implication)
+
+
+def monadic_decomposable_without_bound(f, x) -> bool:
+
+    b, t, e = Ints("b t e")
+
+    print(_equiv(f, x, t, e))
+
+    cf = Exists(
+        [b],
+        ForAll(
+            [t],
+            Exists(
+                [e],
+                And(
+                    e <= b,
+                    _equiv(f, x, t, e)
+                )
+            )
+        )
+    )
+
+    s = Solver()
+    s.add(Not(cf))
+    return s.check() == unsat
+
+
 if __name__ == "__main__":
 
     x, y, z = Ints("x y z")
@@ -176,6 +237,13 @@ if __name__ == "__main__":
     ])
 
     if monadic_decomposable(phi, x):
+        print("Monadically decomposable")
+    else:
+        print("Not monadically decomposable")
+
+    print("=" * 30)
+
+    if monadic_decomposable_without_bound(phi, x):
         print("Monadically decomposable")
     else:
         print("Not monadically decomposable")
