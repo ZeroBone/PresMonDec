@@ -100,5 +100,19 @@ def test_mondec3(k):
     print("mondec1(", R([x, y]), ") =", res)
 
 
+def test_mondec4():
+    # not monadically decomposable, will not terminate
+    R = lambda v: v[0] == v[1]
+    x, y = Ints("x y")
+    mondec(R, [x, y])
+
+
+def test_mondec5():
+    R = lambda v: And(v[1] <= -2 * v[0] + 5, v[0] >= 0, v[1] >= 0)
+    x, y = Ints("x y")
+    mondec(R, [x, y])
+
+
 if __name__ == "__main__":
-    test_mondec3(500)
+    # test_mondec3(500)
+    test_mondec5()

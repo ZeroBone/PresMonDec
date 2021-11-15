@@ -134,9 +134,10 @@ def _same_div(x_1, x_2, x, phi):
     ])
 
 
-def monadic_decomposable(f, x) -> bool:
+def monadic_decomposable(f, x, b=None) -> bool:
 
-    b = _compute_bound(f)
+    if b is None:
+        b = _compute_bound(f)
 
     print("B =", b)
 
