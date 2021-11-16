@@ -53,9 +53,7 @@ def test(phi, *decomposable_on, fast_version=False) -> bool:
     print("Running the general purpose monadic decomposability checker...")
     print("--> it should terminate if there is no error")
 
-    R = lambda v: phi
-
-    mondec(R, phi_vars)
+    mondec(lambda v: phi, phi_vars)
 
     print("General purpose monadic decomposability checker terminated.")
     print("=" * 30)
@@ -102,18 +100,18 @@ def test_4() -> bool:
 
 def run_tests():
 
-    tests_passed = True
+    tp = True
 
     print_test_start(1)
-    tests_passed = tests_passed and test_1()
+    tp = tp and test_1()
     print_test_start(2)
-    tests_passed = tests_passed and test_2()
+    tp = tp and test_2()
     print_test_start(3)
-    tests_passed = tests_passed and test_3()
+    tp = tp and test_3()
     print_test_start(4)
-    tests_passed = tests_passed and test_4()
+    tp = tp and test_4()
 
-    print("Test result: %s" % "PASS" if tests_passed else "FAIL")
+    print("Test result: %s" % "PASS" if tp else "FAIL")
 
 
 if __name__ == "__main__":

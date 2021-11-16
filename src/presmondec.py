@@ -199,14 +199,17 @@ def _equiv(phi, x, a, b):
                    *[v for v in phi_vars_except_x_new.values()]], implication)
 
 
-def monadic_decomposable_without_bound(f, x) -> bool:
+def monadic_decomposable_without_bound(f, x, bound_bound_hint=None) -> bool:
 
     b, t, e = Ints("b t e")
+
+    bound_hint_formula = [b <= bound_bound_hint] if bound_bound_hint is not None else []
 
     cf = Exists(
         [b],
         And(
             b >= 0,
+            *bound_hint_formula,
             ForAll(
                 [t],
                 Implies(
@@ -242,14 +245,19 @@ if __name__ == "__main__":
         congruent(x, y, 2)
     ])
 
-    if monadic_decomposable(phi, x):
+    b = _compute_bound(phi)
+
+    print("B =", b)
+
+    if monadic_decomposable(phi, x, b):
         print("Monadically decomposable")
     else:
         print("Not monadically decomposable")
 
     print("=" * 30)
+    print("Caution: this may take a lot of time to compute")
 
-    if monadic_decomposable_without_bound(phi, x):
+    if monadic_decomposable_without_bound(phi, x, b):
         print("Monadically decomposable")
     else:
         print("Not monadically decomposable")
