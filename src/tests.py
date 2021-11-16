@@ -18,9 +18,6 @@ def test(phi, *decomposable_on, fast_version=False) -> bool:
             else:
                 print("✔ monadic_decomposable(phi, %s) = False" % v)
 
-            if fast_version:
-                continue
-
             if monadic_decomposable_without_bound(phi, v):
                 print("❌ A non-decomposable formula %s has been considered "
                       "decomposable by monadic_decomposable_without_bound() "
