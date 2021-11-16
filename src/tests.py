@@ -5,32 +5,39 @@ from utils import get_formula_variables
 
 
 def test(phi, *decomposable_on):
-
     phi_vars = [v.unwrap() for v in get_formula_variables(phi)]
 
     if len(decomposable_on) == 0:
         # the formula is not decomposable
         for v in phi_vars:
-            assert not monadic_decomposable(phi, v), \
-                "A non-decomposable formula %s has been considered " \
-                "decomposable by monadic_decomposable() when decomposing on variable %s" % (phi, v)
+            if monadic_decomposable(phi, v):
+                print("❌ A non-decomposable formula %s has been considered "
+                      "decomposable by monadic_decomposable() when decomposing on variable %s" % (phi, v))
+            else:
+                print("✔ monadic_decomposable(phi, %s) = False" % v)
 
-            # assert not monadic_decomposable_without_bound(phi, v), \
-            #     "A non-decomposable formula %s has been considered " \
-            #     "decomposable by monadic_decomposable_without_bound() " \
-            #     "when decomposing on variable %s" % (phi, v)
+            if monadic_decomposable_without_bound(phi, v):
+                print("❌ A non-decomposable formula %s has been considered "
+                      "decomposable by monadic_decomposable_without_bound() "
+                      "when decomposing on variable %s" % (phi, v))
+            else:
+                print("✔ monadic_decomposable_without_bound(phi, %s) = False" % v)
 
         return
 
     for v in decomposable_on:
-        assert monadic_decomposable(phi, v),\
-            "A decomposable formula %s has been considered " \
-            "non-decomposable by monadic_decomposable() when decomposing on variable %s" % (phi, v)
+        if not monadic_decomposable(phi, v):
+            print("A decomposable formula %s has been considered "
+                  "non-decomposable by monadic_decomposable() when decomposing on variable %s" % (phi, v))
+        else:
+            print("✔ monadic_decomposable(phi, %s) = True" % v)
 
-        assert monadic_decomposable_without_bound(phi, v), \
-            "A decomposable formula %s has been considered " \
-            "non-decomposable by monadic_decomposable_without_bound() " \
-            "when decomposing on variable %s" % (phi, v)
+        if not monadic_decomposable_without_bound(phi, v):
+            print("A decomposable formula %s has been considered "
+                  "non-decomposable by monadic_decomposable_without_bound() "
+                  "when decomposing on variable %s" % (phi, v))
+        else:
+            print("✔ monadic_decomposable_without_bound(phi, %s) = True" % v)
 
     print("Running the general purpose monadic decomposability checker...")
     print("--> it should terminate if there is no error")
@@ -43,6 +50,10 @@ def test(phi, *decomposable_on):
     print("=" * 30)
 
 
+def print_test_start(i: int):
+    print("==================== [TEST %d] ====================" % i)
+
+
 def test_1():
     x, y = Ints("x y")
     phi = And(x >= 0, y >= 0, x == y)
@@ -51,7 +62,7 @@ def test_1():
 
 def test_2():
     x, y = Ints("x y")
-    phi = And(x >= 0, y >= 0, x < y)
+    phi = And(x >= 0, y >= 0, x <= y)
     test(phi)
 
 
@@ -77,9 +88,13 @@ def test_4():
 
 
 def run_tests():
+    print_test_start(1)
     test_1()
+    print_test_start(2)
     test_2()
+    print_test_start(3)
     test_3()
+    print_test_start(4)
     test_4()
 
 

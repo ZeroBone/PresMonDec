@@ -126,7 +126,7 @@ def _same_div(x_1, x_2, x, phi):
     visited.add(phi)
     detect_div_constraints(phi)
 
-    print("Divisibility constraints found:", div_constraints)
+    # print("Divisibility constraints found:", div_constraints)
 
     return And([
         _same_div_transform_constraint(x_1, x_2, x, c)
@@ -139,7 +139,7 @@ def monadic_decomposable(f, x, b=None) -> bool:
     if b is None:
         b = _compute_bound(f)
 
-    print("B =", b)
+    # print("B =", b)
 
     x_1, x_2 = Ints("x_1 x_2")
 
@@ -156,7 +156,7 @@ def monadic_decomposable(f, x, b=None) -> bool:
         Not(substitute(f, (x, x_2)))
     ))
 
-    print("Final formula:", mon_dec_formula)
+    # print("Final formula:", mon_dec_formula)
 
     s = Solver()
     s.add(mon_dec_formula)
@@ -203,17 +203,22 @@ def monadic_decomposable_without_bound(f, x) -> bool:
 
     b, t, e = Ints("b t e")
 
-    print(_equiv(f, x, t, e))
-
     cf = Exists(
         [b],
-        ForAll(
-            [t],
-            Exists(
-                [e],
-                And(
-                    e <= b,
-                    _equiv(f, x, t, e)
+        And(
+            b >= 0,
+            ForAll(
+                [t],
+                Implies(
+                    t >= 0,
+                    Exists(
+                        [e],
+                        And(
+                            e >= 0,
+                            e <= b,
+                            _equiv(f, x, t, e)
+                        )
+                    )
                 )
             )
         )
