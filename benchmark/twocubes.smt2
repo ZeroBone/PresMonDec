@@ -1,0 +1,13 @@
+(set-info :smt-lib-version 2.6)
+(set-logic QF_LIA)
+(set-info :category "random")
+(set-info :status sat)
+(declare-fun x () Int)
+(declare-fun y () Int)
+(assert (or
+	(and (>= x 0) (>= y 0) (>= 2 x) (>= 2 y))
+	(and (>= x 3) (>= y 3) (>= 5 x) (>= 5 y))
+  )
+)
+(check-sat)
+(exit)

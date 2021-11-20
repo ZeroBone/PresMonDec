@@ -2,7 +2,7 @@ from z3 import *
 from utils import wrap_ast_ref, is_uninterpreted_variable, get_formula_variables
 
 
-def _compute_bound(f) -> int:
+def compute_bound(f) -> int:
 
     visited = set()
 
@@ -112,6 +112,8 @@ def _same_div(x_1, x_2, x, phi):
             div_constraints.add((lhs, rhs, modulo))
             return
 
+        assert node.decl().kind() != Z3_OP_MOD
+
         for child in node.children():
 
             child_wrapped = wrap_ast_ref(child)
@@ -137,7 +139,7 @@ def _same_div(x_1, x_2, x, phi):
 def monadic_decomposable(f, x, b=None) -> bool:
 
     if b is None:
-        b = _compute_bound(f)
+        b = compute_bound(f)
 
     # print("B =", b)
 
@@ -245,7 +247,7 @@ if __name__ == "__main__":
         congruent(x, y, 2)
     ])
 
-    b = _compute_bound(phi)
+    b = compute_bound(phi)
 
     print("B =", b)
 
