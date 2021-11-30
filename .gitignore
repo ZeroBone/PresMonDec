@@ -133,3 +133,7 @@ dmypy.json
 
 # Other files
 *.zip
+
+# Benchmark
+benchmark
+benchmark_results/*

@@ -72,6 +72,8 @@ class BenchmarkContext:
         self._inconsistencies = []
 
         self._stat_var_count_bound = NonLinearAverageValuePlotter()
+        self._stat_var_count_md_without_bound = NonLinearAverageValuePlotter()
+        self._stat_var_count_md = NonLinearAverageValuePlotter()
 
     def update_state(self, cur_phi=None, cur_phi_var_count=None, smt_path=None, cur_phi_var=None):
 
@@ -99,7 +101,7 @@ class BenchmarkContext:
     def report_bound(self, bound):
         self._assert_formula_state_defined()
 
-        self._stat_var_count_bound.add_point(self._cur_phi_var_count, bound)
+        self._stat_var_count_bound.add_point(bound, self._cur_phi_var_count)
 
     def report_monadic_decomposable_without_bound_perf(self, nanos):
 
@@ -110,6 +112,8 @@ class BenchmarkContext:
 
         ms = nanos / 1e6
 
+        self._stat_var_count_md_without_bound.add_point(ms, self._cur_phi_var_count)
+
     def report_monadic_decomposable_perf(self, nanos):
 
         self._assert_formula_variable_state_defined()
@@ -118,6 +122,8 @@ class BenchmarkContext:
             return
 
         ms = nanos / 1e6
+
+        self._stat_var_count_md.add_point(ms, self._cur_phi_var_count)
 
     def report_mondec_results(self, monadic_decomposable, monadic_decomposable_without_bound):
         self._assert_formula_variable_state_defined()
@@ -134,25 +140,49 @@ class BenchmarkContext:
 
         assert self._round_no < self._rounds_limit
 
-        if True or self._round_no % 20 == 0:
-            print("Inconsistencies so far: %5d" % len(self._inconsistencies))
-            print("Starting round %5d..." % self._round_no)
+        if self._round_no % 5 == 0:
+            print("[LOG]: Inconsistencies so far: %5d" % len(self._inconsistencies))
+            print("[LOG]: Starting round: %5d" % self._round_no)
 
         return False
 
     def export_graphs(self):
 
-        fig = self._stat_var_count_bound.plot()[0]
+        fig, ax = self._stat_var_count_bound.plot()
+
+        ax.set_xlabel("Bound B")
+        ax.set_ylabel("Average variable count")
 
         fig.tight_layout()
-        fig.savefig("test.svg")
+        fig.savefig("../benchmark_results/var_count_bound.svg")
+
+        fig, ax = self._stat_var_count_md_without_bound.plot()
+
+        ax.set_xlabel("monadic_decomposable_without_bound performance (ms)")
+        ax.set_ylabel("Average variable count")
+
+        fig.tight_layout()
+        fig.savefig("../benchmark_results/monadic_decomposable_without_bound.svg")
+
+        fig, ax = self._stat_var_count_md.plot()
+
+        ax.set_xlabel("monadic_decomposable performance (ms)")
+        ax.set_ylabel("Average variable count")
+
+        fig.tight_layout()
+        fig.savefig("../benchmark_results/monadic_decomposable.svg")
+
+    def print_inconsistencies(self):
+        print("[LOG]: Inconsistencies: %d" % len(self._inconsistencies))
+        for inc in self._inconsistencies:
+            print(inc)
 
 
 def run_benchmark(rounds_limit=0):
 
     ctx = BenchmarkContext(rounds_limit)
 
-    print("Benchmark started.")
+    print("[LOG]: Benchmark started.")
 
     for smt, smt_path in benchmark_smts():
 
@@ -195,13 +225,16 @@ def run_benchmark(rounds_limit=0):
         if ctx.next_round():
             break
 
-    print("Benchmark finished.")
+    print("[LOG]: Benchmarking complete!")
 
     return ctx
 
 
 if __name__ == "__main__":
 
-    set_option(timeout=10 * 1000)
+    set_option(timeout=5 * 1000)
 
-    run_benchmark(10).export_graphs()
+    ctx = run_benchmark(100)
+
+    ctx.export_graphs()
+    ctx.print_inconsistencies()
