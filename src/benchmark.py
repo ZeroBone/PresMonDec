@@ -1,15 +1,11 @@
 from pathlib import Path
 import time
-import signal
-from contextlib import contextmanager
 from z3 import *
-from presmondec import monadic_decomposable, monadic_decomposable_without_bound, compute_bound
+from presmondec import monadic_decomposable, monadic_decomposable_without_bound, compute_bound, MonDecTestFailed
 from utils import get_formula_variables
 
-# import numpy as np
-# import scipy as sp
-# import matplotlib
-# import matplotlib.pyplot as plt
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 def benchmark_smts():
@@ -22,60 +18,108 @@ def benchmark_smts():
             full_file_path = os.path.join(root, file)
             assert os.path.isfile(full_file_path)
             # print("Path:", full_file_path)
-            yield parse_smt2_file(full_file_path)
-
-
-class TimeoutException(Exception):
-    pass
-
-
-@contextmanager
-def time_limit(seconds):
-
-    def signal_handler(_, __):
-        raise TimeoutException("Timed out!")
-
-    signal.signal(signal.SIGALRM, signal_handler)
-    signal.alarm(seconds)
-
-    try:
-        yield
-    finally:
-        signal.alarm(0)
+            yield parse_smt2_file(full_file_path), full_file_path
 
 
 class BenchmarkContext:
 
-    def __init__(self):
+    def __init__(self, rounds_limit=0):
+        self.rounds_limit = rounds_limit
         self.var_count_to_stats = {}
         self.round_no = 0
+        self.cur_phi = None
+        self.cur_phi_var_count = None
+        self.cur_smt_path = None
+        self.cur_phi_var = None
+        self.inconsistencies = []
 
-    def report_bound(self, var_count, bound):
-        pass
+    def update_state(self, cur_phi=None, cur_phi_var_count=None, smt_path=None, cur_phi_var=None):
 
-    def report_monadic_decomposable_without_bound_perf(self, var_count, nanos):
+        if cur_phi is not None:
+            self.cur_phi = cur_phi
+
+        if cur_phi_var_count is not None:
+            self.cur_phi_var_count = cur_phi_var_count
+
+        if smt_path is not None:
+            self.cur_smt_path = smt_path
+
+        if cur_phi_var is not None:
+            self.cur_phi_var = cur_phi_var
+
+    def _assert_formula_state_defined(self):
+        assert self.cur_phi is not None
+        assert self.cur_phi_var_count is not None
+        assert self.cur_smt_path is not None
+
+    def _assert_formula_variable_state_defined(self):
+        self._assert_formula_state_defined()
+        assert self.cur_phi_var is not None
+
+    def report_bound(self, bound):
+        self._assert_formula_state_defined()
+
+    def report_monadic_decomposable_without_bound_perf(self, nanos):
+
+        self._assert_formula_variable_state_defined()
+
+        if nanos is None:
+            pass
+
         ms = nanos / 1e6
 
-    def report_monadic_decomposable_perf(self, var_count, nanos):
+    def report_monadic_decomposable_perf(self, nanos):
+
+        self._assert_formula_variable_state_defined()
+
+        if nanos is None:
+            pass
+
         ms = nanos / 1e6
 
     def report_mondec_results(self, monadic_decomposable, monadic_decomposable_without_bound):
-        pass
+        self._assert_formula_variable_state_defined()
 
-    def next_round(self):
+        if monadic_decomposable != monadic_decomposable_without_bound:
+            self.inconsistencies.append((self.cur_smt_path, self.cur_phi_var, self.cur_phi))
+
+    def next_round(self) -> bool:
+
         self.round_no += 1
-        if self.round_no % 20 == 0:
+
+        if self.rounds_limit != 0 and self.round_no == self.rounds_limit:
+            return True
+
+        assert self.round_no < self.rounds_limit
+
+        if True or self.round_no % 20 == 0:
+            print("Inconsistencies so far: %5d" % len(self.inconsistencies))
             print("Starting round %5d..." % self.round_no)
 
-    def completed(self):
-        print("Benchmark finished.")
+        return False
+
+    def export_graphs(self):
+
+        fig, ax = plt.subplots()
+
+        x = np.linspace(0, 10, 30)
+        y = np.cos(x)
+
+        ax.plot(x, y, 'o', color='black')
+
+        fig.tight_layout()
+        fig.savefig("test.svg")
+
+        plt.show()
 
 
-def run_benchmark(dec_timeout):
+def run_benchmark(rounds_limit=0):
 
-    ctx = BenchmarkContext()
+    ctx = BenchmarkContext(rounds_limit)
 
-    for smt in benchmark_smts():
+    print("Benchmark started.")
+
+    for smt, smt_path in benchmark_smts():
 
         phi = And([f for f in smt])
         phi_vars = [var.unwrap() for var in get_formula_variables(phi)]
@@ -83,39 +127,46 @@ def run_benchmark(dec_timeout):
 
         b = compute_bound(phi)
 
-        ctx.report_bound(var_count, b)
+        ctx.update_state(phi, var_count, smt_path)
+
+        ctx.report_bound(b)
 
         for phi_var in phi_vars:
 
-            try:
-                with time_limit(dec_timeout):
-                    start_nanos = time.perf_counter_ns()
-                    dec = monadic_decomposable(phi, phi_var, b)
-                    end_nanos = time.perf_counter_ns()
-            except TimeoutException as e:
-                print("monadic_decomposable() timeout")
-                continue
-
-            ctx.report_monadic_decomposable_perf(var_count, end_nanos - start_nanos)
+            ctx.update_state(cur_phi_var=phi_var)
 
             try:
-                with time_limit(dec_timeout):
-                    start_nanos = time.perf_counter_ns()
-                    dec_without_bound = monadic_decomposable_without_bound(phi, phi_var)
-                    end_nanos = time.perf_counter_ns()
-            except TimeoutException as e:
-                print("monadic_decomposable_without_bound() timeout")
+                start_nanos = time.perf_counter_ns()
+                dec = monadic_decomposable(phi, phi_var, b)
+                end_nanos = time.perf_counter_ns()
+
+                ctx.report_monadic_decomposable_perf(end_nanos - start_nanos)
+            except MonDecTestFailed:
+                ctx.report_monadic_decomposable_perf(None)
                 continue
 
-            ctx.report_monadic_decomposable_without_bound_perf(var_count, end_nanos - start_nanos)
+            try:
+                start_nanos = time.perf_counter_ns()
+                dec_without_bound = monadic_decomposable_without_bound(phi, phi_var)
+                end_nanos = time.perf_counter_ns()
+
+                ctx.report_monadic_decomposable_without_bound_perf(end_nanos - start_nanos)
+            except MonDecTestFailed:
+                ctx.report_monadic_decomposable_without_bound_perf(None)
+                continue
 
             ctx.report_mondec_results(dec, dec_without_bound)
 
-        ctx.next_round()
+        if ctx.next_round():
+            break
 
-    return ctx.completed()
+    print("Benchmark finished.")
+
+    return ctx
 
 
 if __name__ == "__main__":
-    print("Benchmark started.")
-    run_benchmark(30)
+
+    set_option(timeout=10 * 1000)
+
+    run_benchmark(10).export_graphs()

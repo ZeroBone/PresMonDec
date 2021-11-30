@@ -2,6 +2,10 @@ from z3 import *
 from utils import wrap_ast_ref, is_uninterpreted_variable, get_formula_variables
 
 
+class MonDecTestFailed(Exception):
+    pass
+
+
 def compute_bound(f) -> int:
 
     visited = set()
@@ -162,7 +166,13 @@ def monadic_decomposable(f, x, b=None) -> bool:
 
     s = Solver()
     s.add(mon_dec_formula)
-    return s.check() == unsat
+
+    result = s.check()
+
+    if result == unknown:
+        raise MonDecTestFailed("z3 solver returned unknown")
+
+    return result == unsat
 
 
 def _equiv(phi, x, a, b):
@@ -231,7 +241,13 @@ def monadic_decomposable_without_bound(f, x, bound_bound_hint=None) -> bool:
 
     s = Solver()
     s.add(Not(cf))
-    return s.check() == unsat
+
+    result = s.check()
+
+    if result == unknown:
+        raise MonDecTestFailed("z3 solver returned unknown")
+
+    return result == unsat
 
 
 if __name__ == "__main__":
