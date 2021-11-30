@@ -1,4 +1,5 @@
 import bisect
+import sys
 import time
 from pathlib import Path
 
@@ -271,7 +272,16 @@ if __name__ == "__main__":
     else:
         set_option(timeout=5 * 1000)
 
-        ctx = run_benchmark(rounds_limit=10, vars_per_formula_limit=1)
+        rounds_limit = int(sys.argv[1])
+        vars_per_formula_limit = int(sys.argv[2])
+
+        if vars_per_formula_limit == 0:
+            vars_per_formula_limit = 3
+
+        print("[LOG]: Rounds limit: %d" % rounds_limit)
+        print("[LOG]: Maximum variables per formula limit: %d" % vars_per_formula_limit)
+
+        ctx = run_benchmark(rounds_limit=rounds_limit, vars_per_formula_limit=vars_per_formula_limit)
 
         ctx.export_graphs()
         ctx.print_inconsistencies()
