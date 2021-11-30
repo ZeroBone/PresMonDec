@@ -1,26 +1,56 @@
-import time
 import bisect
-
+import time
 from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
 from z3 import *
+
 from presmondec import monadic_decomposable, monadic_decomposable_without_bound, compute_bound, MonDecTestFailed
 from utils import get_formula_variables
 
-import numpy as np
-import matplotlib.pyplot as plt
+
+def _resolve_benchmark_root():
+    base_path = Path(__file__).parent
+    return (base_path / "../benchmark").resolve()
+
+
+def remove_unparsable_benchmarks():
+
+    removed_count = 0
+    remaining_count = 0
+
+    for root, dirs, files in os.walk(_resolve_benchmark_root()):
+        for file in files:
+            full_file_path = os.path.join(root, file)
+
+            assert os.path.isfile(full_file_path)
+
+            try:
+                parse_smt2_file(full_file_path)
+            except Z3Exception:
+                print("[LOG]: Removing file '%s'" % full_file_path)
+                os.remove(full_file_path)
+                removed_count += 1
+                continue
+
+            remaining_count += 1
+
+    print("[LOG]: Done - removed: %d remaining: %d" % (removed_count, remaining_count))
 
 
 def benchmark_smts():
 
-    base_path = Path(__file__).parent
-    benchmark_root = (base_path / "../benchmark").resolve()
-
-    for root, dirs, files in os.walk(benchmark_root):
+    for root, dirs, files in os.walk(_resolve_benchmark_root()):
         for file in files:
             full_file_path = os.path.join(root, file)
+
             assert os.path.isfile(full_file_path)
-            # print("Path:", full_file_path)
-            yield parse_smt2_file(full_file_path), full_file_path
+
+            try:
+                yield parse_smt2_file(full_file_path), full_file_path
+            except Z3Exception:
+                print("[WARN]: Could not parse benchmark file '%s'" % full_file_path)
 
 
 class NonLinearAverageValuePlotter:
@@ -138,7 +168,7 @@ class BenchmarkContext:
         if self._rounds_limit != 0 and self._round_no == self._rounds_limit:
             return True
 
-        assert self._round_no < self._rounds_limit
+        assert self._rounds_limit == 0 or self._round_no < self._rounds_limit
 
         if self._round_no % 5 == 0:
             print("[LOG]: Inconsistencies so far: %5d" % len(self._inconsistencies))
@@ -178,7 +208,7 @@ class BenchmarkContext:
             print(inc)
 
 
-def run_benchmark(rounds_limit=0):
+def run_benchmark(rounds_limit=0, vars_per_formula_limit=5):
 
     ctx = BenchmarkContext(rounds_limit)
 
@@ -187,7 +217,7 @@ def run_benchmark(rounds_limit=0):
     for smt, smt_path in benchmark_smts():
 
         phi = And([f for f in smt])
-        phi_vars = [var.unwrap() for var in get_formula_variables(phi)]
+        phi_vars = [var.unwrap() for var in get_formula_variables(phi)][:vars_per_formula_limit]
         var_count = len(phi_vars)
 
         b = compute_bound(phi)
@@ -232,9 +262,12 @@ def run_benchmark(rounds_limit=0):
 
 if __name__ == "__main__":
 
-    set_option(timeout=5 * 1000)
+    if "--clean" in sys.argv[1:]:
+        remove_unparsable_benchmarks()
+    else:
+        set_option(timeout=5 * 1000)
 
-    ctx = run_benchmark(100)
+        ctx = run_benchmark(vars_per_formula_limit=5000)
 
-    ctx.export_graphs()
-    ctx.print_inconsistencies()
+        ctx.export_graphs()
+        ctx.print_inconsistencies()

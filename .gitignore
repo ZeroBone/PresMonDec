@@ -135,5 +135,5 @@ dmypy.json
 *.zip
 
 # Benchmark
-benchmark
+benchmark/*
 benchmark_results/*
