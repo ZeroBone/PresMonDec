@@ -171,7 +171,7 @@ class BenchmarkContext:
 
         assert self._rounds_limit == 0 or self._round_no < self._rounds_limit
 
-        if self._round_no % 5 == 0:
+        if self._round_no % 10 == 0:
             print("[LOG]: Inconsistencies so far: %5d" % len(self._inconsistencies))
             print("[LOG]: Starting round: %5d" % self._round_no)
 
@@ -217,7 +217,7 @@ def run_benchmark(rounds_limit=0, vars_per_formula_limit=5):
 
     for smt, smt_path in benchmark_smts():
 
-        print("[LOG]: Considering formula in '%s'" % smt_path)
+        # print("[LOG]: Considering formula in '%s'" % smt_path)
 
         phi = And([f for f in smt])
         phi_vars = [var.unwrap() for var in get_formula_variables(phi)][:vars_per_formula_limit]
