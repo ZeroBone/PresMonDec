@@ -1,5 +1,7 @@
-from pathlib import Path
 import time
+import bisect
+
+from pathlib import Path
 from z3 import *
 from presmondec import monadic_decomposable, monadic_decomposable_without_bound, compute_bound, MonDecTestFailed
 from utils import get_formula_variables
@@ -21,50 +23,90 @@ def benchmark_smts():
             yield parse_smt2_file(full_file_path), full_file_path
 
 
+class NonLinearAverageValuePlotter:
+
+    def __init__(self):
+        self._x_value_to_x_axis_index = {}
+        self._x_axis = []
+        self._y_running_average_values = []
+
+    def add_point(self, x, y):
+        # using binary search, find the appropriate place
+        # for the value of x on the x axis
+        x_axis_index = bisect.bisect_left(self._x_axis, x)
+
+        if x_axis_index >= len(self._x_axis) or self._x_axis[x_axis_index] != x:
+            # then x value is not yet known
+
+            self._x_axis[x_axis_index:x_axis_index] = [x]
+            self._x_value_to_x_axis_index[x] = x_axis_index
+
+            # -1 is needed to prevent division by zero in case there
+            # exists an x-value without a y-value
+            self._y_running_average_values[x_axis_index:x_axis_index] = [(0, -1)]
+
+        v, n = self._y_running_average_values[x_axis_index]
+        self._y_running_average_values[x_axis_index] = v + y, 1 if n == -1 else n + 1
+
+    def plot(self):
+        fig, ax = plt.subplots()
+
+        x_axis = np.array(self._x_axis)
+        y_axis = np.array([v / n for v, n in self._y_running_average_values])
+
+        ax.plot(x_axis, y_axis, 'o', color='black')
+
+        return fig, ax
+
+
 class BenchmarkContext:
 
     def __init__(self, rounds_limit=0):
-        self.rounds_limit = rounds_limit
-        self.var_count_to_stats = {}
-        self.round_no = 0
-        self.cur_phi = None
-        self.cur_phi_var_count = None
-        self.cur_smt_path = None
-        self.cur_phi_var = None
-        self.inconsistencies = []
+        self._rounds_limit = rounds_limit
+
+        self._round_no = 0
+        self._cur_phi = None
+        self._cur_phi_var_count = None
+        self._cur_smt_path = None
+        self._cur_phi_var = None
+        self._inconsistencies = []
+
+        self._stat_var_count_bound = NonLinearAverageValuePlotter()
 
     def update_state(self, cur_phi=None, cur_phi_var_count=None, smt_path=None, cur_phi_var=None):
 
         if cur_phi is not None:
-            self.cur_phi = cur_phi
+            self._cur_phi = cur_phi
 
         if cur_phi_var_count is not None:
-            self.cur_phi_var_count = cur_phi_var_count
+            self._cur_phi_var_count = cur_phi_var_count
 
         if smt_path is not None:
-            self.cur_smt_path = smt_path
+            self._cur_smt_path = smt_path
 
         if cur_phi_var is not None:
-            self.cur_phi_var = cur_phi_var
+            self._cur_phi_var = cur_phi_var
 
     def _assert_formula_state_defined(self):
-        assert self.cur_phi is not None
-        assert self.cur_phi_var_count is not None
-        assert self.cur_smt_path is not None
+        assert self._cur_phi is not None
+        assert self._cur_phi_var_count is not None
+        assert self._cur_smt_path is not None
 
     def _assert_formula_variable_state_defined(self):
         self._assert_formula_state_defined()
-        assert self.cur_phi_var is not None
+        assert self._cur_phi_var is not None
 
     def report_bound(self, bound):
         self._assert_formula_state_defined()
+
+        self._stat_var_count_bound.add_point(self._cur_phi_var_count, bound)
 
     def report_monadic_decomposable_without_bound_perf(self, nanos):
 
         self._assert_formula_variable_state_defined()
 
         if nanos is None:
-            pass
+            return
 
         ms = nanos / 1e6
 
@@ -73,7 +115,7 @@ class BenchmarkContext:
         self._assert_formula_variable_state_defined()
 
         if nanos is None:
-            pass
+            return
 
         ms = nanos / 1e6
 
@@ -81,36 +123,29 @@ class BenchmarkContext:
         self._assert_formula_variable_state_defined()
 
         if monadic_decomposable != monadic_decomposable_without_bound:
-            self.inconsistencies.append((self.cur_smt_path, self.cur_phi_var, self.cur_phi))
+            self._inconsistencies.append((self._cur_smt_path, self._cur_phi_var, self._cur_phi))
 
     def next_round(self) -> bool:
 
-        self.round_no += 1
+        self._round_no += 1
 
-        if self.rounds_limit != 0 and self.round_no == self.rounds_limit:
+        if self._rounds_limit != 0 and self._round_no == self._rounds_limit:
             return True
 
-        assert self.round_no < self.rounds_limit
+        assert self._round_no < self._rounds_limit
 
-        if True or self.round_no % 20 == 0:
-            print("Inconsistencies so far: %5d" % len(self.inconsistencies))
-            print("Starting round %5d..." % self.round_no)
+        if True or self._round_no % 20 == 0:
+            print("Inconsistencies so far: %5d" % len(self._inconsistencies))
+            print("Starting round %5d..." % self._round_no)
 
         return False
 
     def export_graphs(self):
 
-        fig, ax = plt.subplots()
-
-        x = np.linspace(0, 10, 30)
-        y = np.cos(x)
-
-        ax.plot(x, y, 'o', color='black')
+        fig = self._stat_var_count_bound.plot()[0]
 
         fig.tight_layout()
         fig.savefig("test.svg")
-
-        plt.show()
 
 
 def run_benchmark(rounds_limit=0):
