@@ -1,5 +1,4 @@
 import bisect
-import sys
 import time
 from pathlib import Path
 
@@ -220,7 +219,7 @@ def run_benchmark(rounds_limit=0, vars_per_formula_limit=5):
         # print("[LOG]: Considering formula in '%s'" % smt_path)
 
         phi = And([f for f in smt])
-        phi_vars = [var.unwrap() for var in get_formula_variables(phi)][:vars_per_formula_limit]
+        phi_vars = [var.unwrap() for var in get_formula_variables(phi)]
         var_count = len(phi_vars)
 
         phi = And([phi] + [v >= 0 for v in phi_vars])
@@ -231,7 +230,7 @@ def run_benchmark(rounds_limit=0, vars_per_formula_limit=5):
 
         ctx.report_bound(b)
 
-        for phi_var in phi_vars:
+        for phi_var in phi_vars[:vars_per_formula_limit]:
 
             ctx.update_state(cur_phi_var=phi_var)
 
