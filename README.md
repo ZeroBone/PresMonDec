@@ -20,7 +20,7 @@ It is therefore required to add `x >= 0` constraints for all variables `x` if th
 
 ## First method
 
-The first method is based on the paper [Monadic Decomposition in Integer Linear Arithmetic](https://arxiv.org/abs/2004.12371) paper by Matthew Hague, Anthony Widjaja Lin, Philipp Rümmer and Zhilin Wu.
+The first method is based on the [Monadic Decomposition in Integer Linear Arithmetic](https://arxiv.org/abs/2004.12371) paper by Matthew Hague, Anthony Widjaja Lin, Philipp Rümmer and Zhilin Wu.
 It is important that there, a bound `B` for essentially the maximum value the formula can "address explicitly" is computed before constructing a formula for z3 that expresses the fact that the formula given is monadically decomposable.
 
 To use this method, call the `monadic_decomposable` function which is located in `src/presmondec.py`.

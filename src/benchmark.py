@@ -216,9 +216,13 @@ def run_benchmark(rounds_limit=0, vars_per_formula_limit=5):
 
     for smt, smt_path in benchmark_smts():
 
+        print("[LOG]: Considering formula in '%s'" % smt_path)
+
         phi = And([f for f in smt])
         phi_vars = [var.unwrap() for var in get_formula_variables(phi)][:vars_per_formula_limit]
         var_count = len(phi_vars)
+
+        phi = And([phi] + [v >= 0 for v in phi_vars])
 
         b = compute_bound(phi)
 
@@ -267,7 +271,7 @@ if __name__ == "__main__":
     else:
         set_option(timeout=5 * 1000)
 
-        ctx = run_benchmark(vars_per_formula_limit=5000)
+        ctx = run_benchmark(rounds_limit=10, vars_per_formula_limit=1)
 
         ctx.export_graphs()
         ctx.print_inconsistencies()
