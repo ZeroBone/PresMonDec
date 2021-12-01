@@ -61,6 +61,9 @@ class AverageValuePlotter:
         self._y_running_average_values = []
 
     def add_point(self, x, y):
+
+        y = float(y)
+
         # using binary search, find the appropriate place
         # for the value of x on the x axis
         x_axis_index = bisect.bisect_left(self._x_axis, x)
@@ -73,10 +76,10 @@ class AverageValuePlotter:
 
             # -1 is needed to prevent division by zero in case there
             # exists an x-value without a y-value
-            self._y_running_average_values[x_axis_index:x_axis_index] = [(0, -1)]
+            self._y_running_average_values[x_axis_index:x_axis_index] = [(0.0, -1.0)]
 
         v, n = self._y_running_average_values[x_axis_index]
-        self._y_running_average_values[x_axis_index] = v + y, 1 if n == -1 else n + 1
+        self._y_running_average_values[x_axis_index] = v + y, 1.0 if n < 0 else n + 1.0
 
     def plot(self):
         fig, ax = plt.subplots()
@@ -131,7 +134,7 @@ class BenchmarkContext:
     def report_bound(self, bound):
         self._assert_formula_state_defined()
 
-        self._stat_var_count_bound.add_point(self._cur_phi_var_count, np.log2(bound))
+        self._stat_var_count_bound.add_point(self._cur_phi_var_count, np.log2(float(bound)))
 
     def report_monadic_decomposable_without_bound_perf(self, nanos):
 
@@ -170,12 +173,12 @@ class BenchmarkContext:
 
         assert self._iter_limit == 0 or self._iter_number < self._iter_limit
 
+        if self._iter_number % 5 == 0:
+            self.export_graphs()
+
         if self._iter_number % 10 == 0:
             print("[LOG]: Inconsistencies so far: %5d" % len(self._inconsistencies))
             print("[LOG]: Starting iteration: %5d" % self._iter_number)
-
-        if self._iter_number % 20 == 0:
-            self.export_graphs()
 
         return False
 
@@ -184,7 +187,7 @@ class BenchmarkContext:
         fig, ax = self._stat_var_count_bound.plot()
 
         ax.set_xlabel("Variable count")
-        ax.set_ylabel("Average log_2(B)")
+        ax.set_ylabel("Average log(B)")
 
         fig.tight_layout()
         fig.savefig("../benchmark_results/%05d_bound_var_count.svg" % self._iter_number)
