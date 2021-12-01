@@ -91,10 +91,10 @@ class NonLinearAverageValuePlotter:
 
 class BenchmarkContext:
 
-    def __init__(self, rounds_limit=0):
-        self._rounds_limit = rounds_limit
+    def __init__(self, iter_limit=0):
+        self._iter_limit = iter_limit
+        self._iter_number = 0
 
-        self._round_no = 0
         self._cur_phi = None
         self._cur_phi_var_count = None
         self._cur_smt_path = None
@@ -163,16 +163,16 @@ class BenchmarkContext:
 
     def next_round(self) -> bool:
 
-        self._round_no += 1
+        self._iter_number += 1
 
-        if self._rounds_limit != 0 and self._round_no == self._rounds_limit:
+        if self._iter_limit != 0 and self._iter_number == self._iter_limit:
             return True
 
-        assert self._rounds_limit == 0 or self._round_no < self._rounds_limit
+        assert self._iter_limit == 0 or self._iter_number < self._iter_limit
 
-        if self._round_no % 10 == 0:
+        if self._iter_number % 10 == 0:
             print("[LOG]: Inconsistencies so far: %5d" % len(self._inconsistencies))
-            print("[LOG]: Starting round: %5d" % self._round_no)
+            print("[LOG]: Starting iteration: %5d" % self._iter_number)
 
         return False
 
