@@ -131,7 +131,7 @@ class BenchmarkContext:
     def report_bound(self, bound):
         self._assert_formula_state_defined()
 
-        self._stat_var_count_bound.add_point(self._cur_phi_var_count, bound)
+        self._stat_var_count_bound.add_point(self._cur_phi_var_count, np.log2(bound))
 
     def report_monadic_decomposable_without_bound_perf(self, nanos):
 
@@ -184,7 +184,7 @@ class BenchmarkContext:
         fig, ax = self._stat_var_count_bound.plot()
 
         ax.set_xlabel("Variable count")
-        ax.set_ylabel("Average bound B")
+        ax.set_ylabel("Average log_2(B)")
 
         fig.tight_layout()
         fig.savefig("../benchmark_results/%05d_bound_var_count.svg" % self._iter_number)
