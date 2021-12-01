@@ -53,7 +53,7 @@ def benchmark_smts():
                 print("[WARN]: Could not parse benchmark file '%s'" % full_file_path)
 
 
-class NonLinearAverageValuePlotter:
+class AverageValuePlotter:
 
     def __init__(self):
         self._x_value_to_x_axis_index = {}
@@ -101,9 +101,9 @@ class BenchmarkContext:
         self._cur_phi_var = None
         self._inconsistencies = []
 
-        self._stat_var_count_bound = NonLinearAverageValuePlotter()
-        self._md_without_bound_var_count = NonLinearAverageValuePlotter()
-        self._md_var_count = NonLinearAverageValuePlotter()
+        self._stat_var_count_bound = AverageValuePlotter()
+        self._md_without_bound_var_count = AverageValuePlotter()
+        self._md_var_count = AverageValuePlotter()
 
     def update_state(self, cur_phi=None, cur_phi_var_count=None, smt_path=None, cur_phi_var=None):
 
@@ -174,6 +174,9 @@ class BenchmarkContext:
             print("[LOG]: Inconsistencies so far: %5d" % len(self._inconsistencies))
             print("[LOG]: Starting iteration: %5d" % self._iter_number)
 
+        if self._iter_number % 20 == 0:
+            self.export_graphs()
+
         return False
 
     def export_graphs(self):
@@ -184,7 +187,7 @@ class BenchmarkContext:
         ax.set_ylabel("Average bound B")
 
         fig.tight_layout()
-        fig.savefig("../benchmark_results/var_count_bound.svg")
+        fig.savefig("../benchmark_results/%05d_bound_var_count.svg" % self._iter_number)
 
         fig, ax = self._md_without_bound_var_count.plot()
 
@@ -192,7 +195,7 @@ class BenchmarkContext:
         ax.set_ylabel("Average variable count")
 
         fig.tight_layout()
-        fig.savefig("../benchmark_results/monadic_decomposable_without_bound.svg")
+        fig.savefig("../benchmark_results/%05d_monadic_decomposable_without_bound.svg" % self._iter_number)
 
         fig, ax = self._md_var_count.plot()
 
@@ -200,7 +203,7 @@ class BenchmarkContext:
         ax.set_ylabel("Average variable count")
 
         fig.tight_layout()
-        fig.savefig("../benchmark_results/monadic_decomposable.svg")
+        fig.savefig("../benchmark_results/%05d_monadic_decomposable.svg" % self._iter_number)
 
     def print_inconsistencies(self):
         print("[LOG]: Inconsistencies: %d" % len(self._inconsistencies))
