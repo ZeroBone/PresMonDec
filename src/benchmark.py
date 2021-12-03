@@ -95,6 +95,13 @@ class AverageValuePlotter:
         v, n = self._y_running_average_values[x_axis_index]
         self._y_running_average_values[x_axis_index] = v + y, 1.0 if n < 0 else n + 1.0
 
+    def save_as_npz(self, file):
+
+        x_axis = np.array(self._x_axis)
+        y_axis = np.array([v / n for v, n in self._y_running_average_values])
+
+        np.savez(file, x=x_axis, y=y_axis)
+
     def plot(self):
         fig, ax = plt.subplots()
 
@@ -189,17 +196,35 @@ class BenchmarkContext:
         assert self._iter_limit == 0 or self._iter_number < self._iter_limit
 
         if self._iter_number % 5 == 0:
-            self.export_graphs()
+            self.export_data()
 
         if self._iter_number % 10 == 0:
             logger.info("Inconsistencies so far: %5d", self._inconsistencies)
-            logger.info("Starting iteration: %5d", self._iter_number)
 
         return False
 
+    def export_data(self):
+
+        output = _resolve_benchmark_result_root()
+
+        self._stat_var_count_bound.save_as_npz(os.path.join(
+            output,
+            "%05d_bound_var_count.npz" % self._iter_number
+        ))
+
+        self._md_without_bound_var_count.save_as_npz(os.path.join(
+            output,
+            "%05d_monadic_decomposable_without_bound.npz" % self._iter_number
+        ))
+
+        self._md_var_count.save_as_npz(os.path.join(
+            output,
+            "%05d_monadic_decomposable.npz" % self._iter_number
+        ))
+
     def export_graphs(self):
 
-        output_path = _resolve_benchmark_result_root()
+        output = _resolve_benchmark_result_root()
 
         fig, ax = self._stat_var_count_bound.plot()
 
@@ -207,7 +232,7 @@ class BenchmarkContext:
         ax.set_ylabel("Average bit length of B")
 
         fig.tight_layout()
-        fig.savefig(os.path.join(output_path, "%05d_bound_var_count.svg" % self._iter_number))
+        fig.savefig(os.path.join(output, "%05d_bound_var_count.svg" % self._iter_number))
 
         fig, ax = self._md_without_bound_var_count.plot()
 
@@ -215,7 +240,7 @@ class BenchmarkContext:
         ax.set_ylabel("Average variable count")
 
         fig.tight_layout()
-        fig.savefig(os.path.join(output_path, "%05d_monadic_decomposable_without_bound.svg" % self._iter_number))
+        fig.savefig(os.path.join(output, "%05d_monadic_decomposable_without_bound.svg" % self._iter_number))
 
         fig, ax = self._md_var_count.plot()
 
@@ -223,7 +248,10 @@ class BenchmarkContext:
         ax.set_ylabel("Average variable count")
 
         fig.tight_layout()
-        fig.savefig(os.path.join(output_path, "%05d_monadic_decomposable.svg" % self._iter_number))
+        fig.savefig(os.path.join(output, "%05d_monadic_decomposable.svg" % self._iter_number))
+
+    def get_iteration_number(self) -> int:
+        return self._iter_number
 
 
 def run_benchmark(iter_limit=0, vars_per_formula_limit=5, z3_sat_check_timeout_ms=0, file_size_limit=0):
@@ -234,7 +262,7 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5, z3_sat_check_timeout_m
 
     for smt, smt_path in benchmark_smts(file_size_limit):
 
-        logger.info("Considering '%s'", smt_path)
+        logger.info("Iteration: %06d Considering '%s'", ctx.get_iteration_number(), smt_path)
 
         if z3_sat_check_timeout_ms > 0:
 
@@ -360,4 +388,4 @@ if __name__ == "__main__":
             file_size_limit_mib << 20
         )
 
-        ctx.export_graphs()
+        ctx.export_data()
