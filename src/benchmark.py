@@ -72,7 +72,6 @@ def benchmark_smts(file_size_limit: int):
 class AverageValuePlotter:
 
     def __init__(self):
-        self._x_value_to_x_axis_index = {}
         self._x_axis = []
         self._y_running_average_values = []
 
@@ -88,7 +87,6 @@ class AverageValuePlotter:
             # then x value is not yet known
 
             self._x_axis[x_axis_index:x_axis_index] = [x]
-            self._x_value_to_x_axis_index[x] = x_axis_index
 
             # -1 is needed to prevent division by zero in case there
             # exists an x-value without a y-value
