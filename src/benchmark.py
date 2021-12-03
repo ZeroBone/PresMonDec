@@ -1,4 +1,5 @@
 import bisect
+import subprocess
 import time
 from pathlib import Path
 
@@ -214,7 +215,7 @@ class BenchmarkContext:
             print(inc)
 
 
-def run_benchmark(iter_limit=0, vars_per_formula_limit=5):
+def run_benchmark(iter_limit=0, vars_per_formula_limit=5, z3_sat_check_timeout_ms=0):
 
     ctx = BenchmarkContext(iter_limit)
 
@@ -222,7 +223,25 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5):
 
     for smt, smt_path in benchmark_smts():
 
-        # print("[LOG]: Considering formula in '%s'" % smt_path)
+        print("[LOG]: Considering formula in '%s'" % smt_path)
+
+        if z3_sat_check_timeout_ms > 0:
+
+            result = subprocess.run(["z3", "-t:%d" % z3_sat_check_timeout_ms, "--", smt_path], capture_output=True)
+
+            if result.returncode != 0:
+                print("[WARN]: z3 has terminated with nonzero exit code %d" % result.returncode)
+
+            result = result.stdout.decode("utf-8").rstrip()
+
+            if result.startswith("unknown"):
+                print("[WARN]: z3 has failed to solve the problem in '%s' withing %d ms, ignoring this instance." %
+                      (smt_path, z3_sat_check_timeout_ms))
+                continue
+
+            if not result.startswith("sat") and not result.startswith("unsat"):
+                print("[ERR]: unknown z3 output:", result)
+                continue
 
         phi = And([f for f in smt])
         phi_vars = [var.unwrap() for var in get_formula_variables(phi)]
@@ -230,7 +249,11 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5):
 
         phi = And([phi] + [v >= 0 for v in phi_vars])
 
+        start_nanos = time.perf_counter_ns()
         b = compute_bound(phi)
+        end_nanos = time.perf_counter_ns()
+
+        bound_b_computation_time = end_nanos - start_nanos
 
         ctx.update_state(phi, var_count, smt_path)
 
@@ -245,7 +268,7 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5):
                 dec = monadic_decomposable(phi, phi_var, b)
                 end_nanos = time.perf_counter_ns()
 
-                ctx.report_monadic_decomposable_perf(end_nanos - start_nanos)
+                ctx.report_monadic_decomposable_perf(bound_b_computation_time + end_nanos - start_nanos)
             except MonDecTestFailed:
                 ctx.report_monadic_decomposable_perf(None)
                 continue
@@ -274,19 +297,36 @@ if __name__ == "__main__":
 
     if "--clean" in sys.argv[1:]:
         remove_unparsable_benchmarks()
+    elif len(sys.argv) < 3:
+        print("[ITERATION_LIMIT] [VARS_PER_FORMULA_LIMIT] arguments missing")
+        print("Usage: python benchmark.py [ITERATION_LIMIT] [VARS_PER_FORMULA_LIMIT]")
     else:
-        set_option(timeout=10 * 1000)
 
         iter_limit = int(sys.argv[1])
         vars_per_formula_limit = int(sys.argv[2])
 
-        if vars_per_formula_limit == 0:
-            vars_per_formula_limit = 3
+        assert iter_limit >= 0
+        assert vars_per_formula_limit >= 1
+
+        z3_sat_check_timeout_ms = int(sys.argv[3]) if len(sys.argv) >= 4 else 0
+
+        assert z3_sat_check_timeout_ms >= 0
 
         print("[LOG]: Iteration limit: %d" % iter_limit)
         print("[LOG]: Maximum variables per formula limit: %d" % vars_per_formula_limit)
 
-        ctx = run_benchmark(iter_limit=iter_limit, vars_per_formula_limit=vars_per_formula_limit)
+        if z3_sat_check_timeout_ms != 0:
+            print("[LOG]: Sat check: enabled, timeout = %d ms" % z3_sat_check_timeout_ms)
+        else:
+            print("[LOG]: Sat check: disabled")
+
+        set_option(timeout=10 * 1000)
+
+        ctx = run_benchmark(
+            iter_limit,
+            vars_per_formula_limit,
+            z3_sat_check_timeout_ms
+        )
 
         ctx.export_graphs()
         ctx.print_inconsistencies()
