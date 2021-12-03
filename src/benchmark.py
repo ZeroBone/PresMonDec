@@ -2,6 +2,7 @@ import bisect
 import os.path
 import subprocess
 import time
+import logging
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -11,10 +12,18 @@ from z3 import *
 from presmondec import monadic_decomposable, monadic_decomposable_without_bound, compute_bound, MonDecTestFailed
 from utils import get_formula_variables
 
+logger = logging.getLogger("premondec_benchmark")
+logger.setLevel(logging.DEBUG)
+
 
 def _resolve_benchmark_root():
     base_path = Path(__file__).parent
     return (base_path / "../benchmark").resolve()
+
+
+def _resolve_benchmark_result_root():
+    base_path = Path(__file__).parent
+    return (base_path / "../benchmark_results").resolve()
 
 
 def remove_unparsable_benchmarks():
@@ -31,14 +40,14 @@ def remove_unparsable_benchmarks():
             try:
                 parse_smt2_file(full_file_path)
             except Z3Exception:
-                print("[INFO]: Removing file '%s'" % full_file_path)
+                logger.info("Removing file '%s'", full_file_path)
                 os.remove(full_file_path)
                 removed_count += 1
                 continue
 
             remaining_count += 1
 
-    print("[INFO]: Done - removed: %d remaining: %d" % (removed_count, remaining_count))
+    logger.info("Done - removed: %d remaining: %d", removed_count, remaining_count)
 
 
 def benchmark_smts(file_size_limit: int):
@@ -57,7 +66,7 @@ def benchmark_smts(file_size_limit: int):
             try:
                 yield parse_smt2_file(full_file_path), full_file_path
             except Z3Exception:
-                print("[WARN]: Could not parse benchmark file '%s'" % full_file_path)
+                logger.warning("Could not parse benchmark file '%s'", full_file_path)
 
 
 class AverageValuePlotter:
@@ -109,7 +118,7 @@ class BenchmarkContext:
         self._cur_phi_var_count = None
         self._cur_smt_path = None
         self._cur_phi_var = None
-        self._inconsistencies = []
+        self._inconsistencies = 0
 
         self._stat_var_count_bound = AverageValuePlotter()
         self._md_without_bound_var_count = AverageValuePlotter()
@@ -169,7 +178,8 @@ class BenchmarkContext:
         self._assert_formula_variable_state_defined()
 
         if monadic_decomposable != monadic_decomposable_without_bound:
-            self._inconsistencies.append((self._cur_smt_path, self._cur_phi_var, self._cur_phi))
+            self._inconsistencies += 1
+            logger.error("Inconsistency in '%s' on variable '%s'", self._cur_smt_path, self._cur_phi_var)
 
     def next_round(self) -> bool:
 
@@ -184,12 +194,14 @@ class BenchmarkContext:
             self.export_graphs()
 
         if self._iter_number % 10 == 0:
-            print("[INFO]: Inconsistencies so far: %5d" % len(self._inconsistencies))
-            print("[INFO]: Starting iteration: %5d" % self._iter_number)
+            logger.info("Inconsistencies so far: %5d", self._inconsistencies)
+            logger.info("Starting iteration: %5d", self._iter_number)
 
         return False
 
     def export_graphs(self):
+
+        output_path = _resolve_benchmark_result_root()
 
         fig, ax = self._stat_var_count_bound.plot()
 
@@ -197,7 +209,7 @@ class BenchmarkContext:
         ax.set_ylabel("Average bit length of B")
 
         fig.tight_layout()
-        fig.savefig("../benchmark_results/%05d_bound_var_count.svg" % self._iter_number)
+        fig.savefig(os.path.join(output_path, "%05d_bound_var_count.svg" % self._iter_number))
 
         fig, ax = self._md_without_bound_var_count.plot()
 
@@ -205,7 +217,7 @@ class BenchmarkContext:
         ax.set_ylabel("Average variable count")
 
         fig.tight_layout()
-        fig.savefig("../benchmark_results/%05d_monadic_decomposable_without_bound.svg" % self._iter_number)
+        fig.savefig(os.path.join(output_path, "%05d_monadic_decomposable_without_bound.svg" % self._iter_number))
 
         fig, ax = self._md_var_count.plot()
 
@@ -213,40 +225,35 @@ class BenchmarkContext:
         ax.set_ylabel("Average variable count")
 
         fig.tight_layout()
-        fig.savefig("../benchmark_results/%05d_monadic_decomposable.svg" % self._iter_number)
-
-    def print_inconsistencies(self):
-        print("[INFO]: Inconsistencies: %d" % len(self._inconsistencies))
-        for inc in self._inconsistencies:
-            print(inc)
+        fig.savefig(os.path.join(output_path, "%05d_monadic_decomposable.svg" % self._iter_number))
 
 
 def run_benchmark(iter_limit=0, vars_per_formula_limit=5, z3_sat_check_timeout_ms=0, file_size_limit=0):
 
     ctx = BenchmarkContext(iter_limit)
 
-    print("[INFO]: Benchmark started.")
+    logger.info("Benchmark started.")
 
     for smt, smt_path in benchmark_smts(file_size_limit):
 
-        print("[INFO]: Considering '%s'" % smt_path)
+        logger.info("Considering '%s'", smt_path)
 
         if z3_sat_check_timeout_ms > 0:
 
             result = subprocess.run(["z3", "-t:%d" % z3_sat_check_timeout_ms, "--", smt_path], capture_output=True)
 
             if result.returncode != 0:
-                print("[WARN]: z3 has terminated with nonzero exit code %d" % result.returncode)
+                logger.warning("z3 has terminated with nonzero exit code %d", result.returncode)
 
             result = result.stdout.decode("utf-8").rstrip()
 
             if result.startswith("unknown"):
-                print("[WARN]: z3 has failed to solve the problem in '%s' withing %d ms, ignoring this instance." %
-                      (smt_path, z3_sat_check_timeout_ms))
+                logger.warning("z3 has failed to solve the problem in '%s' withing %d ms, "
+                               "ignoring this instance.", smt_path, z3_sat_check_timeout_ms)
                 continue
 
             if not result.startswith("sat") and not result.startswith("unsat"):
-                print("[ERR]: unknown z3 output:", result)
+                logger.error("unknown z3 output: %s", result)
                 continue
 
         phi = And([f for f in smt])
@@ -295,12 +302,20 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5, z3_sat_check_timeout_m
             # round limit reached
             break
 
-    print("[INFO]: Benchmarking complete!")
+    logger.info("Benchmarking complete!")
 
     return ctx
 
 
 if __name__ == "__main__":
+
+    fh = logging.FileHandler(os.path.join(_resolve_benchmark_result_root(), "benchmark.log"))
+    fh.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter("[%(asctime)s %(levelname)7s]: %(message)s")
+    fh.setFormatter(formatter)
+
+    logger.addHandler(fh)
 
     if "--clean" in sys.argv[1:]:
         remove_unparsable_benchmarks()
@@ -325,20 +340,18 @@ if __name__ == "__main__":
 
         assert file_size_limit_mib >= 0
 
-        print("[INFO]: Iteration limit: %d" % iter_limit)
-        print("[INFO]: Maximum variables per formula limit: %d" % vars_per_formula_limit)
+        logger.info("Iteration limit: %d", iter_limit)
+        logger.info("Maximum variables per formula limit: %d", vars_per_formula_limit)
 
         if z3_sat_check_timeout_ms != 0:
-            print("[INFO]: Sat check: enabled, timeout = %d ms" % z3_sat_check_timeout_ms)
+            logger.info("Sat check: enabled, timeout = %d ms", z3_sat_check_timeout_ms)
         else:
-            print("[INFO]: Sat check: disabled")
+            logger.info("Sat check: disabled")
 
         if file_size_limit_mib != 0:
-            print("[INFO]: File size limit: enabled, limit = %d MiB" % file_size_limit_mib)
+            logger.info("File size limit: enabled, limit = %d MiB", file_size_limit_mib)
         else:
-            print("[INFO]: File size limit: disabled")
-
-        print("=" * 50)
+            logger.info("File size limit: disabled")
 
         set_option(timeout=10 * 1000)
 
@@ -350,4 +363,3 @@ if __name__ == "__main__":
         )
 
         ctx.export_graphs()
-        ctx.print_inconsistencies()
