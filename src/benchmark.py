@@ -1,4 +1,5 @@
 import bisect
+import os.path
 import subprocess
 import time
 from pathlib import Path
@@ -30,23 +31,28 @@ def remove_unparsable_benchmarks():
             try:
                 parse_smt2_file(full_file_path)
             except Z3Exception:
-                print("[LOG]: Removing file '%s'" % full_file_path)
+                print("[INFO]: Removing file '%s'" % full_file_path)
                 os.remove(full_file_path)
                 removed_count += 1
                 continue
 
             remaining_count += 1
 
-    print("[LOG]: Done - removed: %d remaining: %d" % (removed_count, remaining_count))
+    print("[INFO]: Done - removed: %d remaining: %d" % (removed_count, remaining_count))
 
 
-def benchmark_smts():
+def benchmark_smts(file_size_limit: int):
+
+    assert file_size_limit >= 0
 
     for root, dirs, files in os.walk(_resolve_benchmark_root()):
         for file in files:
             full_file_path = os.path.join(root, file)
 
             assert os.path.isfile(full_file_path)
+
+            if file_size_limit != 0 and os.path.getsize(full_file_path) >= file_size_limit:
+                continue
 
             try:
                 yield parse_smt2_file(full_file_path), full_file_path
@@ -178,8 +184,8 @@ class BenchmarkContext:
             self.export_graphs()
 
         if self._iter_number % 10 == 0:
-            print("[LOG]: Inconsistencies so far: %5d" % len(self._inconsistencies))
-            print("[LOG]: Starting iteration: %5d" % self._iter_number)
+            print("[INFO]: Inconsistencies so far: %5d" % len(self._inconsistencies))
+            print("[INFO]: Starting iteration: %5d" % self._iter_number)
 
         return False
 
@@ -210,20 +216,20 @@ class BenchmarkContext:
         fig.savefig("../benchmark_results/%05d_monadic_decomposable.svg" % self._iter_number)
 
     def print_inconsistencies(self):
-        print("[LOG]: Inconsistencies: %d" % len(self._inconsistencies))
+        print("[INFO]: Inconsistencies: %d" % len(self._inconsistencies))
         for inc in self._inconsistencies:
             print(inc)
 
 
-def run_benchmark(iter_limit=0, vars_per_formula_limit=5, z3_sat_check_timeout_ms=0):
+def run_benchmark(iter_limit=0, vars_per_formula_limit=5, z3_sat_check_timeout_ms=0, file_size_limit=0):
 
     ctx = BenchmarkContext(iter_limit)
 
-    print("[LOG]: Benchmark started.")
+    print("[INFO]: Benchmark started.")
 
-    for smt, smt_path in benchmark_smts():
+    for smt, smt_path in benchmark_smts(file_size_limit):
 
-        print("[LOG]: Considering formula in '%s'" % smt_path)
+        print("[INFO]: Considering '%s'" % smt_path)
 
         if z3_sat_check_timeout_ms > 0:
 
@@ -286,9 +292,10 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5, z3_sat_check_timeout_m
             ctx.report_mondec_results(dec, dec_without_bound)
 
         if ctx.next_round():
+            # round limit reached
             break
 
-    print("[LOG]: Benchmarking complete!")
+    print("[INFO]: Benchmarking complete!")
 
     return ctx
 
@@ -299,7 +306,9 @@ if __name__ == "__main__":
         remove_unparsable_benchmarks()
     elif len(sys.argv) < 3:
         print("[ITERATION_LIMIT] [VARS_PER_FORMULA_LIMIT] arguments missing")
-        print("Usage: python benchmark.py [ITERATION_LIMIT] [VARS_PER_FORMULA_LIMIT]")
+        print("Usage: python benchmark.py [ITERATION_LIMIT] [VARS_PER_FORMULA_LIMIT] [SAT_CHECK_TIMEOUT_MS] ["
+              "FILE_SIZE_LIMIT_MiB]")
+        print("The last two arguments are optional.")
     else:
 
         iter_limit = int(sys.argv[1])
@@ -312,20 +321,32 @@ if __name__ == "__main__":
 
         assert z3_sat_check_timeout_ms >= 0
 
-        print("[LOG]: Iteration limit: %d" % iter_limit)
-        print("[LOG]: Maximum variables per formula limit: %d" % vars_per_formula_limit)
+        file_size_limit_mib = int(sys.argv[4]) if len(sys.argv) >= 5 else 0
+
+        assert file_size_limit_mib >= 0
+
+        print("[INFO]: Iteration limit: %d" % iter_limit)
+        print("[INFO]: Maximum variables per formula limit: %d" % vars_per_formula_limit)
 
         if z3_sat_check_timeout_ms != 0:
-            print("[LOG]: Sat check: enabled, timeout = %d ms" % z3_sat_check_timeout_ms)
+            print("[INFO]: Sat check: enabled, timeout = %d ms" % z3_sat_check_timeout_ms)
         else:
-            print("[LOG]: Sat check: disabled")
+            print("[INFO]: Sat check: disabled")
+
+        if file_size_limit_mib != 0:
+            print("[INFO]: File size limit: enabled, limit = %d MiB" % file_size_limit_mib)
+        else:
+            print("[INFO]: File size limit: disabled")
+
+        print("=" * 50)
 
         set_option(timeout=10 * 1000)
 
         ctx = run_benchmark(
             iter_limit,
             vars_per_formula_limit,
-            z3_sat_check_timeout_ms
+            z3_sat_check_timeout_ms,
+            file_size_limit_mib << 20
         )
 
         ctx.export_graphs()
