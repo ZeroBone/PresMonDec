@@ -108,6 +108,8 @@ class BenchmarkContext:
         self._cur_smt_file_size = None
         self._cur_phi_var = None
         self._inconsistencies = 0
+        self._md_counter = 0
+        self._md_wb_counter = 0
 
         self._var_count_bound = AverageValueTracker()
 
@@ -182,6 +184,11 @@ class BenchmarkContext:
         md_file_size.add_point(ms, self._cur_smt_file_size)
         md_file_size_r.add_point(self._cur_smt_file_size, ms)
 
+        if without_bound:
+            self._md_wb_counter += 1
+        else:
+            self._md_counter += 1
+
     def report_md_log_count_until_inconsistent(self, log_count: int, initial_bound_bit_length: int):
 
         self._assert_formula_variable_state_defined()
@@ -210,6 +217,7 @@ class BenchmarkContext:
 
         if self._iter_number % 10 == 0:
             logger.info("Inconsistencies so far: %5d", self._inconsistencies)
+            logger.info("Benchmark runs: With bound: %d Without bound: %d", self._md_counter, self._md_wb_counter)
 
         return False
 
