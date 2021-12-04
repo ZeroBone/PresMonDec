@@ -172,10 +172,10 @@ class BenchmarkContext:
             self._md_wb_var_count_r,
             self._md_wb_file_size,
             self._md_wb_file_size_r) if without_bound else (
-                self._md_var_count,
-                self._md_var_count_r,
-                self._md_file_size,
-                self._md_file_size_r
+            self._md_var_count,
+            self._md_var_count_r,
+            self._md_file_size,
+            self._md_file_size_r
         )
 
         md_var_count.add_point(ms, self._cur_phi_var_count)
@@ -249,7 +249,6 @@ class BenchmarkContext:
 
 def run_benchmark(iter_limit=0, vars_per_formula_limit=5,
                   z3_sat_check_timeout_ms=0, file_size_limit=0, z3_timeout_ms=0):
-
     ctx = BenchmarkContext(iter_limit)
 
     logger.info("Benchmark started.")
@@ -296,6 +295,8 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5,
 
         for phi_var in phi_vars[:vars_per_formula_limit]:
 
+            logger.info("Decomposing on variable '%s'", phi_var)
+
             ctx.update_state(cur_phi_var=phi_var)
 
             try:
@@ -310,6 +311,8 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5,
             except MonDecTestFailed:
                 ctx.report_md_perf(None, False)
                 continue
+
+            logger.info("Decomposable (with bound): %s", "yes" if dec else "no")
 
             smaller_bound = b.bit_length()
             log_count = 0
@@ -332,6 +335,8 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5,
                 smaller_bound = smaller_bound.bit_length()
                 log_count += 1
 
+            logger.info("Log count: %d", log_count)
+
             try:
                 start_nanos = time.perf_counter_ns()
                 dec_without_bound = monadic_decomposable_without_bound(phi, phi_var, timeout_ms=z3_timeout_ms)
@@ -339,8 +344,11 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5,
 
                 ctx.report_md_perf(end_nanos - start_nanos, True)
             except MonDecTestFailed:
+                logger.info("Could not decompose on '%s' without bound", phi_var)
                 ctx.report_md_perf(None, True)
                 continue
+
+            logger.info("Iteration for variable '%s' completed without monadic decomposition failures", phi_var)
 
             ctx.report_mondec_results(dec, dec_without_bound)
 
@@ -386,6 +394,14 @@ if __name__ == "__main__":
 
         file_size_limit_kb = int(sys.argv[5]) if len(sys.argv) >= 6 else 0
         assert file_size_limit_kb >= 0
+
+        logger.info("\n"
+                    "______             ___  ___           ______          \n"
+                    "| ___ \\            |  \\/  |           |  _  \\         \n"
+                    "| |_/ / __ ___  ___| .  . | ___  _ __ | | | |___  ___ \n"
+                    "|  __/ '__/ _ \\/ __| |\\/| |/ _ \\| '_ \\| | | / _ \\/ __|\n"
+                    "| |  | | |  __/\\__ \\ |  | | (_) | | | | |/ /  __/ (__ \n"
+                    "\\_|  |_|  \\___||___|_|  |_/\\___/|_| |_|___/ \\___|\\___|")
 
         logger.info("Iteration limit: %d", iter_limit)
         logger.info("Maximum variables per formula limit: %d", vars_per_formula_limit)

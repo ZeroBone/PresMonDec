@@ -1,3 +1,6 @@
+import logging
+import time
+
 from z3 import *
 from utils import wrap_ast_ref, is_uninterpreted_variable, get_formula_variables
 
@@ -166,6 +169,8 @@ def monadic_decomposable(f, x, b=None, timeout_ms=0) -> bool:
 
     if timeout_ms > 0:
         s.set(timeout=timeout_ms)
+        s.set(solver2_timeout=timeout_ms)
+        time.sleep(1)
 
     s.add(mon_dec_formula)
 
@@ -245,6 +250,8 @@ def monadic_decomposable_without_bound(f, x, bound_bound_hint=None, timeout_ms=0
 
     if timeout_ms > 0:
         s.set(timeout=timeout_ms)
+        s.set(solver2_timeout=timeout_ms)
+        time.sleep(1)
 
     s.add(Not(cf))
 
