@@ -3,6 +3,7 @@ import sys
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 
 from benchmark import resolve_benchmark_result_root
 
@@ -59,6 +60,8 @@ def benchmark_plot(iter_number: int):
 
         save_as_img(fig, "var_count_bound")
 
+    seconds_formatter = ticker.FuncFormatter(lambda x, pos: "{:.2f}".format(x / 1000.))
+
     for subject in ["file_size", "var_count"]:
         with load_npz("md_%s" % subject, iter_number) as md_subject,\
                 load_npz("md_wb_%s" % subject, iter_number) as md_wb_subject,\
@@ -97,18 +100,31 @@ def benchmark_plot(iter_number: int):
 
             if subject == "file_size":
                 ax_s_md.set_xlabel(".smt2 file size (bytes)")
-                ax_s_md.set_ylabel("Average monadic decomposition performance (ms)")
+                ax_s_md.set_ylabel("Average monadic decomposition performance (seconds)")
 
-                ax_md_s.set_xlabel("monadic decomposition performance (ms)")
+                ax_s_md.yaxis.set_major_formatter(seconds_formatter)
+                ax_s_md.yaxis.set_minor_formatter(seconds_formatter)
+
+                ax_md_s.set_xlabel("monadic decomposition performance (seconds)")
                 ax_md_s.set_ylabel("Average .smt2 file size (bytes)")
+
+                ax_md_s.xaxis.set_major_formatter(seconds_formatter)
+                ax_md_s.xaxis.set_minor_formatter(seconds_formatter)
+
             else:
                 assert subject == "var_count"
 
                 ax_s_md.set_xlabel("Variable count")
-                ax_s_md.set_ylabel("Average monadic decomposition performance (ms)")
+                ax_s_md.set_ylabel("Average monadic decomposition performance (seconds)")
 
-                ax_md_s.set_xlabel("monadic decomposition performance (ms)")
+                ax_s_md.yaxis.set_major_formatter(seconds_formatter)
+                ax_s_md.yaxis.set_minor_formatter(seconds_formatter)
+
+                ax_md_s.set_xlabel("monadic decomposition performance (seconds)")
                 ax_md_s.set_ylabel("Average variable count")
+
+                ax_md_s.xaxis.set_major_formatter(seconds_formatter)
+                ax_md_s.xaxis.set_minor_formatter(seconds_formatter)
 
             save_as_img(fig_s_md, "md_%s_r" % subject)
             save_as_img(fig_md_s, "md_%s" % subject)

@@ -10,8 +10,8 @@ Following dependencies have to be installed in oder to use this project:
 * [matplotlib](https://matplotlib.org/)
 
 To install z3, follow the tutorial corresponding to your operating system.
-Please note that z3 should be available as a cli service for the monadic decomposition to work with timeouts.
-Other mentioned dependencies can be installed using the following commands:
+Please note that z3 should be available as a CLI service for the monadic decomposition to work when the timeout is specified explicitly (see the description of how to use both monadic decomposability checkers below).
+`numpy` and `matplotlib` can be installed as follows:
 ```shell
 pip install numpy
 pip install matplotlib
