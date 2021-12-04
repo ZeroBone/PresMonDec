@@ -1,5 +1,5 @@
 from z3 import *
-from utils import wrap_ast_ref, is_uninterpreted_variable, get_formula_variables, run_z3_cli, Z3CliError
+from utils import wrap_ast_ref, is_uninterpreted_variable, get_formula_variables, run_z3_cli
 
 
 class MonDecTestFailed(Exception):

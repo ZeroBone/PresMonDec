@@ -270,7 +270,7 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5,
             result = result.stdout.decode("utf-8").rstrip()
 
             if result.startswith("unknown") or result.startswith("timeout"):
-                logger.warning("z3 has failed to solve the problem in '%s' withing %d ms, "
+                logger.warning("z3 has failed to solve the problem in '%s' within %d ms, "
                                "ignoring this instance.", smt_path, z3_sat_check_timeout_ms)
                 continue
 
