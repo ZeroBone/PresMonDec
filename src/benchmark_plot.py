@@ -14,11 +14,11 @@ def load_npz(suffix: str, iter_number: int):
     ))
 
 
-def save_as_img(fig, suffix: str, iter_number: int):
+def save_as_img(fig, suffix: str):
     fig.tight_layout()
     fig.savefig(os.path.join(
         resolve_benchmark_result_root(),
-        ("%05d_" % iter_number) + suffix + ".svg"
+        suffix + ".svg"
     ))
 
 
@@ -26,7 +26,7 @@ def simple_plot(x_axis, y_axis):
 
     fig, ax = plt.subplots()
 
-    ax.grid(True)
+    ax.grid()
 
     ax.plot(x_axis, y_axis, "o", color="blue", alpha=.7)
 
@@ -39,17 +39,17 @@ def benchmark_plot(iter_number: int):
 
         fig, ax = simple_plot(npz["x"], npz["y"])
         ax.set_xlabel("Bit length of B")
-        ax.set_ylabel("Average k s.t. decomposition with bound log^k(B) is consistent")
+        ax.set_ylabel("Average min k s.t. decomposition with bound log^k(B) is consistent")
 
-        save_as_img(fig, "bound_log_count_until_inc", iter_number)
+        save_as_img(fig, "bound_log_count_until_inc")
 
     with load_npz("bound_log_count_until_inc_r", iter_number) as npz:
 
         fig, ax = simple_plot(npz["x"], npz["y"])
-        ax.set_xlabel("smallest k s.t. decomposition with bound log^k(B) is consistent")
+        ax.set_xlabel("min k s.t. decomposition with bound log^k(B) is consistent")
         ax.set_ylabel("Average bit length of B")
 
-        save_as_img(fig, "bound_log_count_until_inc_r", iter_number)
+        save_as_img(fig, "bound_log_count_until_inc_r")
 
     with load_npz("var_count_bound", iter_number) as npz:
 
@@ -57,7 +57,7 @@ def benchmark_plot(iter_number: int):
         ax.set_xlabel("Variable count")
         ax.set_ylabel("Average bit length of B")
 
-        save_as_img(fig, "var_count_bound", iter_number)
+        save_as_img(fig, "var_count_bound")
 
     with load_npz("md_file_size", iter_number) as md_file_size,\
             load_npz("md_wb_file_size", iter_number) as md_wb_file_size,\
@@ -83,10 +83,10 @@ def benchmark_plot(iter_number: int):
                 md_wb_file_size["y"]
             )
         ]:
-            ax.grid(True)
+            ax.grid(zorder=0)
 
-            with_bound = ax.scatter(x, y, alpha=.7, color="blue")
-            without_bound = ax.scatter(x_wb, y_wb, alpha=.7, color="orange")
+            with_bound = ax.scatter(x, y, alpha=.7, color="blue", zorder=3)
+            without_bound = ax.scatter(x_wb, y_wb, alpha=.7, color="orange", zorder=3)
 
             ax.legend(
                 (with_bound, without_bound),
@@ -100,8 +100,8 @@ def benchmark_plot(iter_number: int):
         ax_md.set_xlabel("monadic decomposition performance (ms)")
         ax_md.set_ylabel("Average .smt2 file size (bytes)")
 
-        save_as_img(fig_fs, "md_file_size_r", iter_number)
-        save_as_img(fig_md, "md_file_size", iter_number)
+        save_as_img(fig_fs, "md_file_size_r")
+        save_as_img(fig_md, "md_file_size")
 
 
 if __name__ == "__main__":

@@ -107,9 +107,12 @@ class BenchmarkContext:
         self._cur_smt_path = None
         self._cur_smt_file_size = None
         self._cur_phi_var = None
+
         self._inconsistencies = 0
         self._md_counter = 0
         self._md_wb_counter = 0
+        self._md_fail_counter = 0
+        self._md_wb_fail_counter = 0
 
         self._var_count_bound = AverageValueTracker()
 
@@ -163,6 +166,12 @@ class BenchmarkContext:
         self._assert_formula_variable_state_defined()
 
         if nanos is None:
+
+            if without_bound:
+                self._md_wb_fail_counter += 1
+            else:
+                self._md_fail_counter += 1
+
             return
 
         ms = nanos // 1000000
@@ -204,8 +213,15 @@ class BenchmarkContext:
             logger.error("Inconsistency in '%s' on variable '%s'", self._cur_smt_path, self._cur_phi_var)
 
     def log_stats(self):
+        logger.info("Printing current statistics:")
         logger.info("Inconsistencies so far: %5d", self._inconsistencies)
-        logger.info("Benchmark runs: With bound: %d Without bound: %d", self._md_counter, self._md_wb_counter)
+        logger.info("Benchmark runs: With bound: %d Without bound: %d",
+                    self._md_counter, self._md_wb_counter)
+        logger.info("Benchmark failed runs: With bound: %d Without bound: %d",
+                    self._md_fail_counter, self._md_wb_fail_counter)
+        logger.info("Benchmark total runs: With bound: %d Without bound: %d",
+                    self._md_counter + self._md_fail_counter,
+                    self._md_wb_counter + self._md_wb_fail_counter)
 
     def next_round(self) -> bool:
 
@@ -278,11 +294,15 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5,
                 logger.error("unknown z3 output: %s", result)
                 continue
 
-        phi = And([f for f in smt])
-        phi_vars = [var.unwrap() for var in get_formula_variables(phi)]
-        var_count = len(phi_vars)
+        try:
+            phi = And([f for f in smt])
+            phi_vars = [var.unwrap() for var in get_formula_variables(phi)]
+            var_count = len(phi_vars)
 
-        phi = And([phi] + [v >= 0 for v in phi_vars])
+            phi = And([phi] + [v >= 0 for v in phi_vars])
+        except TypeError:
+            logger.warning("Could not cleanup formula, ignoring it - is it a valid presburger arithmetic formula?")
+            continue
 
         start_nanos = time.perf_counter_ns()
         b = compute_bound(phi)
@@ -318,7 +338,7 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5,
                 ctx.report_md_perf(None, False)
                 continue
 
-            logger.info("Decomposable (with bound): %s", "yes" if dec else "no")
+            logger.info("Monadically decomposable (with bound): %s", "yes" if dec else "no")
 
             smaller_bound = b.bit_length()
             log_count = 0
@@ -344,7 +364,7 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5,
                 smaller_bound = smaller_bound.bit_length()
                 log_count += 1
 
-            logger.info("Log count: %d", log_count)
+            logger.info("min k such that decomposition with bound log^k(B) is consistent: %d", log_count)
 
             try:
                 start_nanos = time.perf_counter_ns()
@@ -360,9 +380,9 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5,
                 ctx.report_md_perf(None, True)
                 continue
 
-            logger.info("Iteration for variable '%s' completed without monadic decomposition failures", phi_var)
-
             ctx.report_mondec_results(dec, dec_without_bound)
+
+            logger.info("Iteration for variable '%s' completed without monadic decomposition failures", phi_var)
 
         if ctx.next_round():
             # round limit reached
