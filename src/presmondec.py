@@ -140,7 +140,7 @@ def _same_div(x_1, x_2, x, phi):
     ])
 
 
-def monadic_decomposable(f, x, b=None) -> bool:
+def monadic_decomposable(f, x, b=None, timeout_ms=0) -> bool:
 
     if b is None:
         b = compute_bound(f)
@@ -162,9 +162,11 @@ def monadic_decomposable(f, x, b=None) -> bool:
         Not(substitute(f, (x, x_2)))
     ))
 
-    # print("Final formula:", mon_dec_formula)
-
     s = Solver()
+
+    if timeout_ms > 0:
+        s.set(timeout=timeout_ms)
+
     s.add(mon_dec_formula)
 
     result = s.check()
@@ -211,7 +213,7 @@ def _equiv(phi, x, a, b):
                    *[v for v in phi_vars_except_x_new.values()]], implication)
 
 
-def monadic_decomposable_without_bound(f, x, bound_bound_hint=None) -> bool:
+def monadic_decomposable_without_bound(f, x, bound_bound_hint=None, timeout_ms=0) -> bool:
 
     b, t, e = Ints("b t e")
 
@@ -240,6 +242,10 @@ def monadic_decomposable_without_bound(f, x, bound_bound_hint=None) -> bool:
     )
 
     s = Solver()
+
+    if timeout_ms > 0:
+        s.set(timeout=timeout_ms)
+
     s.add(Not(cf))
 
     result = s.check()

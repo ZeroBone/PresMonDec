@@ -247,7 +247,9 @@ class BenchmarkContext:
         return self._iter_number
 
 
-def run_benchmark(iter_limit=0, vars_per_formula_limit=5, z3_sat_check_timeout_ms=0, file_size_limit=0):
+def run_benchmark(iter_limit=0, vars_per_formula_limit=5,
+                  z3_sat_check_timeout_ms=0, file_size_limit=0, z3_timeout_ms=0):
+
     ctx = BenchmarkContext(iter_limit)
 
     logger.info("Benchmark started.")
@@ -298,7 +300,7 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5, z3_sat_check_timeout_m
 
             try:
                 start_nanos = time.perf_counter_ns()
-                dec = monadic_decomposable(phi, phi_var, b)
+                dec = monadic_decomposable(phi, phi_var, b, z3_timeout_ms)
                 end_nanos = time.perf_counter_ns()
 
                 ctx.report_md_perf(
@@ -315,7 +317,7 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5, z3_sat_check_timeout_m
             while True:
 
                 try:
-                    dec_with_smaller_bound = monadic_decomposable(phi, phi_var, smaller_bound)
+                    dec_with_smaller_bound = monadic_decomposable(phi, phi_var, smaller_bound, z3_timeout_ms)
                 except MonDecTestFailed:
                     break
 
@@ -332,7 +334,7 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5, z3_sat_check_timeout_m
 
             try:
                 start_nanos = time.perf_counter_ns()
-                dec_without_bound = monadic_decomposable_without_bound(phi, phi_var)
+                dec_without_bound = monadic_decomposable_without_bound(phi, phi_var, timeout_ms=z3_timeout_ms)
                 end_nanos = time.perf_counter_ns()
 
                 ctx.report_md_perf(end_nanos - start_nanos, True)
@@ -365,8 +367,8 @@ if __name__ == "__main__":
         remove_unparsable_benchmarks()
     elif len(sys.argv) < 3:
         print("[ITERATION_LIMIT] [VARS_PER_FORMULA_LIMIT] arguments missing")
-        print("Usage: python benchmark.py [ITERATION_LIMIT] [VARS_PER_FORMULA_LIMIT] [SAT_CHECK_TIMEOUT_MS] ["
-              "FILE_SIZE_LIMIT_MiB]")
+        print("Usage: python benchmark.py [ITERATION_LIMIT] [VARS_PER_FORMULA_LIMIT]\n\t"
+              "[SAT_CHECK_TIMEOUT_MS] [Z3_TIMEOUT_MS] [FILE_SIZE_LIMIT_MiB]")
         print("The last two arguments are optional.")
     else:
 
@@ -377,12 +379,13 @@ if __name__ == "__main__":
         assert vars_per_formula_limit >= 1
 
         z3_sat_check_timeout_ms = int(sys.argv[3]) if len(sys.argv) >= 4 else 0
-
         assert z3_sat_check_timeout_ms >= 0
 
-        file_size_limit_mib = int(sys.argv[4]) if len(sys.argv) >= 5 else 0
+        z3_timeout_ms = int(sys.argv[4]) if len(sys.argv) >= 5 else 0
+        assert z3_timeout_ms >= 0
 
-        assert file_size_limit_mib >= 0
+        file_size_limit_kb = int(sys.argv[5]) if len(sys.argv) >= 6 else 0
+        assert file_size_limit_kb >= 0
 
         logger.info("Iteration limit: %d", iter_limit)
         logger.info("Maximum variables per formula limit: %d", vars_per_formula_limit)
@@ -392,18 +395,22 @@ if __name__ == "__main__":
         else:
             logger.info("Sat check: disabled")
 
-        if file_size_limit_mib != 0:
-            logger.info("File size limit: enabled, limit = %d MiB", file_size_limit_mib)
+        if z3_timeout_ms != 0:
+            logger.info("Z3 timeout: enabled, timeout = %d ms", z3_timeout_ms)
+        else:
+            logger.info("Z3 timeout: disabled")
+
+        if file_size_limit_kb != 0:
+            logger.info("File size limit: enabled, limit = %d KB", file_size_limit_kb)
         else:
             logger.info("File size limit: disabled")
-
-        set_option(timeout=10 * 1000)
 
         ctx = run_benchmark(
             iter_limit,
             vars_per_formula_limit,
             z3_sat_check_timeout_ms,
-            file_size_limit_mib << 20
+            file_size_limit_kb * 1000,
+            z3_timeout_ms
         )
 
         ctx.log_stats()
