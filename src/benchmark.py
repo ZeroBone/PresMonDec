@@ -203,6 +203,10 @@ class BenchmarkContext:
             self._inconsistencies += 1
             logger.error("Inconsistency in '%s' on variable '%s'", self._cur_smt_path, self._cur_phi_var)
 
+    def log_stats(self):
+        logger.info("Inconsistencies so far: %5d", self._inconsistencies)
+        logger.info("Benchmark runs: With bound: %d Without bound: %d", self._md_counter, self._md_wb_counter)
+
     def next_round(self) -> bool:
 
         self._iter_number += 1
@@ -213,11 +217,8 @@ class BenchmarkContext:
         assert self._iter_limit == 0 or self._iter_number < self._iter_limit
 
         if self._iter_number % 10 == 0:
+            self.log_stats()
             self.export_data()
-
-        if self._iter_number % 10 == 0:
-            logger.info("Inconsistencies so far: %5d", self._inconsistencies)
-            logger.info("Benchmark runs: With bound: %d Without bound: %d", self._md_counter, self._md_wb_counter)
 
         return False
 
@@ -405,4 +406,5 @@ if __name__ == "__main__":
             file_size_limit_mib << 20
         )
 
+        ctx.log_stats()
         ctx.export_data()
