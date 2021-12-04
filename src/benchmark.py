@@ -57,7 +57,7 @@ def benchmark_smts(file_size_limit: int):
 
             assert os.path.isfile(full_file_path)
 
-            if file_size_limit != 0 and os.path.getsize(full_file_path) >= file_size_limit:
+            if file_size_limit != 0 and os.path.getsize(full_file_path) > file_size_limit:
                 continue
 
             try:
