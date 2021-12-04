@@ -39,14 +39,14 @@ def benchmark_plot(iter_number: int):
 
         fig, ax = simple_plot(npz["x"], npz["y"])
         ax.set_xlabel("Bit length of B")
-        ax.set_ylabel("Average min k s.t. decomposition with bound log^k(B) is consistent")
+        ax.set_ylabel("avg(min{k:decomposition with bound log^k(B) is consistent})")
 
         save_as_img(fig, "bound_log_count_until_inc")
 
     with load_npz("bound_log_count_until_inc_r", iter_number) as npz:
 
         fig, ax = simple_plot(npz["x"], npz["y"])
-        ax.set_xlabel("min k s.t. decomposition with bound log^k(B) is consistent")
+        ax.set_xlabel("min{k:decomposition with bound log^k(B) is consistent}")
         ax.set_ylabel("Average bit length of B")
 
         save_as_img(fig, "bound_log_count_until_inc_r")
@@ -59,49 +59,59 @@ def benchmark_plot(iter_number: int):
 
         save_as_img(fig, "var_count_bound")
 
-    with load_npz("md_file_size", iter_number) as md_file_size,\
-            load_npz("md_wb_file_size", iter_number) as md_wb_file_size,\
-            load_npz("md_file_size_r", iter_number) as file_size_md,\
-            load_npz("md_wb_file_size_r", iter_number) as file_size_md_wb:
+    for subject in ["file_size", "var_count"]:
+        with load_npz("md_%s" % subject, iter_number) as md_subject,\
+                load_npz("md_wb_%s" % subject, iter_number) as md_wb_subject,\
+                load_npz("md_%s_r" % subject, iter_number) as subject_md,\
+                load_npz("md_wb_%s_r" % subject, iter_number) as subject_md_wb:
 
-        fig_fs, ax_fs = plt.subplots()
-        fig_md, ax_md = plt.subplots()
+            fig_s_md, ax_s_md = plt.subplots()
+            fig_md_s, ax_md_s = plt.subplots()
 
-        for ax, x, y, x_wb, y_wb in [
-            (
-                ax_fs,
-                file_size_md["x"],
-                file_size_md["y"],
-                file_size_md_wb["x"],
-                file_size_md_wb["y"]
-            ),
-            (
-                ax_md,
-                md_file_size["x"],
-                md_file_size["y"],
-                md_wb_file_size["x"],
-                md_wb_file_size["y"]
-            )
-        ]:
-            ax.grid(zorder=0)
+            for ax, x, y, x_wb, y_wb in [
+                (
+                    ax_s_md,
+                    subject_md["x"],
+                    subject_md["y"],
+                    subject_md_wb["x"],
+                    subject_md_wb["y"]
+                ),
+                (
+                    ax_md_s,
+                    md_subject["x"],
+                    md_subject["y"],
+                    md_wb_subject["x"],
+                    md_wb_subject["y"]
+                )
+            ]:
+                ax.grid(zorder=0)
 
-            with_bound = ax.scatter(x, y, alpha=.7, color="blue", zorder=3)
-            without_bound = ax.scatter(x_wb, y_wb, alpha=.7, color="orange", zorder=3)
+                with_bound = ax.scatter(x, y, alpha=.7, color="blue", zorder=3)
+                without_bound = ax.scatter(x_wb, y_wb, alpha=.7, color="orange", zorder=3)
 
-            ax.legend(
-                (with_bound, without_bound),
-                ("With bound", "Without bound"),
-                loc="upper right"
-            )
+                ax.legend(
+                    (with_bound, without_bound),
+                    ("With bound", "Without bound"),
+                    loc="upper right"
+                )
 
-        ax_fs.set_xlabel(".smt2 file size (bytes)")
-        ax_fs.set_ylabel("Average monadic decomposition performance (ms)")
+            if subject == "file_size":
+                ax_s_md.set_xlabel(".smt2 file size (bytes)")
+                ax_s_md.set_ylabel("Average monadic decomposition performance (ms)")
 
-        ax_md.set_xlabel("monadic decomposition performance (ms)")
-        ax_md.set_ylabel("Average .smt2 file size (bytes)")
+                ax_md_s.set_xlabel("monadic decomposition performance (ms)")
+                ax_md_s.set_ylabel("Average .smt2 file size (bytes)")
+            else:
+                assert subject == "var_count"
 
-        save_as_img(fig_fs, "md_file_size_r")
-        save_as_img(fig_md, "md_file_size")
+                ax_s_md.set_xlabel("Variable count")
+                ax_s_md.set_ylabel("Average monadic decomposition performance (ms)")
+
+                ax_md_s.set_xlabel("monadic decomposition performance (ms)")
+                ax_md_s.set_ylabel("Average variable count")
+
+            save_as_img(fig_s_md, "md_%s_r" % subject)
+            save_as_img(fig_md_s, "md_%s" % subject)
 
 
 if __name__ == "__main__":
