@@ -9,7 +9,7 @@ import numpy as np
 from z3 import *
 
 from presmondec import monadic_decomposable, monadic_decomposable_without_bound, compute_bound, MonDecTestFailed
-from utils import get_formula_variables
+from utils import get_formula_variables, Z3CliError
 
 logger = logging.getLogger("premondec_benchmark")
 logger.setLevel(logging.DEBUG)
@@ -259,14 +259,17 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5,
 
         if z3_sat_check_timeout_ms > 0:
 
-            result = subprocess.run(["z3", "-t:%d" % z3_sat_check_timeout_ms, "--", smt_path], capture_output=True)
+            timeout_s = (z3_sat_check_timeout_ms // 1000) + 1
+
+            result = subprocess.run(["z3", "-T:%d" % timeout_s,
+                                     "-t:%d" % z3_sat_check_timeout_ms, "--", smt_path], capture_output=True)
 
             if result.returncode != 0:
-                logger.warning("z3 has terminated with nonzero exit code %d", result.returncode)
+                logger.warning("z3 terminated with nonzero exit code %d", result.returncode)
 
             result = result.stdout.decode("utf-8").rstrip()
 
-            if result.startswith("unknown"):
+            if result.startswith("unknown") or result.startswith("timeout"):
                 logger.warning("z3 has failed to solve the problem in '%s' withing %d ms, "
                                "ignoring this instance.", smt_path, z3_sat_check_timeout_ms)
                 continue
@@ -308,6 +311,9 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5,
                     bound_b_computation_time + end_nanos - start_nanos,
                     False
                 )
+            except Z3CliError as e:
+                logger.error("z3 cli error: %s", str(e))
+                continue
             except MonDecTestFailed:
                 ctx.report_md_perf(None, False)
                 continue
@@ -321,6 +327,9 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5,
 
                 try:
                     dec_with_smaller_bound = monadic_decomposable(phi, phi_var, smaller_bound, z3_timeout_ms)
+                except Z3CliError as e:
+                    logger.error("z3 cli error: %s", str(e))
+                    break
                 except MonDecTestFailed:
                     break
 
@@ -343,6 +352,9 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5,
                 end_nanos = time.perf_counter_ns()
 
                 ctx.report_md_perf(end_nanos - start_nanos, True)
+            except Z3CliError as e:
+                logger.error("z3 cli error: %s", str(e))
+                continue
             except MonDecTestFailed:
                 logger.info("Could not decompose on '%s' without bound", phi_var)
                 ctx.report_md_perf(None, True)

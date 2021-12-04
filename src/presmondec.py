@@ -1,8 +1,5 @@
-import logging
-import time
-
 from z3 import *
-from utils import wrap_ast_ref, is_uninterpreted_variable, get_formula_variables
+from utils import wrap_ast_ref, is_uninterpreted_variable, get_formula_variables, run_z3_cli, Z3CliError
 
 
 class MonDecTestFailed(Exception):
@@ -143,12 +140,23 @@ def _same_div(x_1, x_2, x, phi):
     ])
 
 
+def _run_z3_solver_with_timeout(s, timeout_ms: int):
+
+    if timeout_ms > 0:
+        s.set(timeout=timeout_ms)
+        s.set(solver2_timeout=timeout_ms)
+
+        smt_string = s.to_smt2()
+
+        return run_z3_cli(smt_string, timeout_ms)
+
+    return s.check()
+
+
 def monadic_decomposable(f, x, b=None, timeout_ms=0) -> bool:
 
     if b is None:
         b = compute_bound(f)
-
-    # print("B =", b)
 
     x_1, x_2 = Ints("x_1 x_2")
 
@@ -167,14 +175,9 @@ def monadic_decomposable(f, x, b=None, timeout_ms=0) -> bool:
 
     s = Solver()
 
-    if timeout_ms > 0:
-        s.set(timeout=timeout_ms)
-        s.set(solver2_timeout=timeout_ms)
-        time.sleep(1)
-
     s.add(mon_dec_formula)
 
-    result = s.check()
+    result = _run_z3_solver_with_timeout(s, timeout_ms)
 
     if result == unknown:
         raise MonDecTestFailed("z3 solver returned unknown")
@@ -248,14 +251,9 @@ def monadic_decomposable_without_bound(f, x, bound_bound_hint=None, timeout_ms=0
 
     s = Solver()
 
-    if timeout_ms > 0:
-        s.set(timeout=timeout_ms)
-        s.set(solver2_timeout=timeout_ms)
-        time.sleep(1)
-
     s.add(Not(cf))
 
-    result = s.check()
+    result = _run_z3_solver_with_timeout(s, timeout_ms)
 
     if result == unknown:
         raise MonDecTestFailed("z3 solver returned unknown")

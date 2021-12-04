@@ -1,3 +1,5 @@
+import subprocess
+import tempfile
 from z3 import *
 
 
@@ -42,3 +44,42 @@ def get_formula_variables(f):
     ast_visitor(f)
 
     return vars_set
+
+
+class Z3CliError(Exception):
+    pass
+
+
+def run_z3_cli(smt_string, timeout_ms):
+
+    timeout_s = (timeout_ms // 1000) + 1
+
+    tmp = tempfile.NamedTemporaryFile(delete=False, mode="w")
+
+    try:
+        smt_path = tmp.name
+
+        tmp.write(smt_string)
+        tmp.flush()
+
+        result = subprocess.run(["z3", "-T:%d" % timeout_s,
+                                 "-t:%d" % timeout_ms, "--", smt_path], capture_output=True)
+    finally:
+        tmp.close()
+        os.unlink(tmp.name)
+
+    if result is None:
+        raise Z3CliError("Failed to run z3 as subprocess")
+
+    result = result.stdout.decode("utf-8").rstrip()
+
+    if result.startswith("unknown") or result.startswith("timeout"):
+        return unknown
+
+    if result.startswith("sat"):
+        return sat
+
+    if result.startswith("unsat"):
+        return unsat
+
+    raise Z3CliError("unknown z3 output: %s" % result)
