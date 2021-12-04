@@ -156,7 +156,7 @@ class BenchmarkContext:
 
         self._var_count_bound.add_point(self._cur_phi_var_count, bound_bit_length)
 
-    def report_monadic_decomposable_perf(self, nanos, without_bound: bool):
+    def report_md_perf(self, nanos, without_bound: bool):
 
         self._assert_formula_variable_state_defined()
 
@@ -205,7 +205,7 @@ class BenchmarkContext:
 
         assert self._iter_limit == 0 or self._iter_number < self._iter_limit
 
-        if self._iter_number % 5 == 0:
+        if self._iter_number % 10 == 0:
             self.export_data()
 
         if self._iter_number % 10 == 0:
@@ -292,12 +292,12 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5, z3_sat_check_timeout_m
                 dec = monadic_decomposable(phi, phi_var, b)
                 end_nanos = time.perf_counter_ns()
 
-                ctx.report_monadic_decomposable_perf(
+                ctx.report_md_perf(
                     bound_b_computation_time + end_nanos - start_nanos,
                     False
                 )
             except MonDecTestFailed:
-                ctx.report_monadic_decomposable_perf(None, False)
+                ctx.report_md_perf(None, False)
                 continue
 
             smaller_bound = b.bit_length()
@@ -326,9 +326,9 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5, z3_sat_check_timeout_m
                 dec_without_bound = monadic_decomposable_without_bound(phi, phi_var)
                 end_nanos = time.perf_counter_ns()
 
-                ctx.report_monadic_decomposable_perf(end_nanos - start_nanos, True)
+                ctx.report_md_perf(end_nanos - start_nanos, True)
             except MonDecTestFailed:
-                ctx.report_monadic_decomposable_perf(None, True)
+                ctx.report_md_perf(None, True)
                 continue
 
             ctx.report_mondec_results(dec, dec_without_bound)
