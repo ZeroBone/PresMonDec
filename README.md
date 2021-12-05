@@ -4,7 +4,7 @@ PresMonDec is at tool that checks whether a quantifier-free Formula in Presburge
 
 # Installation
 
-Following dependencies have to be installed in oder to use all features:
+Following dependencies have to be installed in order to be able to use all features of this project:
 * [Z3](https://github.com/Z3Prover/z3)
 * [numpy](https://numpy.org/)
 * [matplotlib](https://matplotlib.org/)
@@ -72,7 +72,7 @@ print("Monadically decomposable on x:", dec)
 
 ## Second method
 
-In the second method the monadic decomposition is tested by constructing a formula that essentlially describes the existence of a bound `B` with an existential quantifier.
+In the second method the monadic decomposition is tested by constructing a formula that essentially describes the existence of a bound `B` with an existential quantifier.
 In accordance with Proposition 2.3 in the paper above, such a bound exists and every element is equivalent to some element bounded by this bound if and only if the formula is monadically decomposable.
 
 This method is implemented as a function `monadic_decomposable_without_bound` in `src/presmondec.py`. The arguments are:

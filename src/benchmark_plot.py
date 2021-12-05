@@ -40,7 +40,7 @@ def benchmark_plot(iter_number: int):
 
         fig, ax = simple_plot(npz["x"], npz["y"])
         ax.set_xlabel("Bit length of B")
-        ax.set_ylabel("avg(max{k:decomposition with bound log^k(B) is consistent})")
+        ax.set_ylabel("avg(max{k:decomp. with bound log^k(B) is consistent})")
 
         save_as_img(fig, "bound_log_count_until_inc")
 
@@ -60,7 +60,7 @@ def benchmark_plot(iter_number: int):
 
         save_as_img(fig, "var_count_bound")
 
-    seconds_formatter = ticker.FuncFormatter(lambda x, pos: "{:.2f}".format(x / 1000.))
+    div_by_1000_and_round = ticker.FuncFormatter(lambda x, pos: "{:.2f}".format(x / 1000.))
 
     for subject in ["file_size", "var_count"]:
         with load_npz("md_%s" % subject, iter_number) as md_subject,\
@@ -99,17 +99,23 @@ def benchmark_plot(iter_number: int):
                 )
 
             if subject == "file_size":
-                ax_s_md.set_xlabel(".smt2 file size (bytes)")
+                ax_s_md.set_xlabel(".smt2 file size (KB)")
                 ax_s_md.set_ylabel("Average monadic decomposition performance (seconds)")
 
-                ax_s_md.yaxis.set_major_formatter(seconds_formatter)
-                ax_s_md.yaxis.set_minor_formatter(seconds_formatter)
+                ax_s_md.xaxis.set_major_formatter(div_by_1000_and_round)
+                ax_s_md.xaxis.set_minor_formatter(div_by_1000_and_round)
+
+                ax_s_md.yaxis.set_major_formatter(div_by_1000_and_round)
+                ax_s_md.yaxis.set_minor_formatter(div_by_1000_and_round)
 
                 ax_md_s.set_xlabel("monadic decomposition performance (seconds)")
-                ax_md_s.set_ylabel("Average .smt2 file size (bytes)")
+                ax_md_s.set_ylabel("Average .smt2 file size (KB)")
 
-                ax_md_s.xaxis.set_major_formatter(seconds_formatter)
-                ax_md_s.xaxis.set_minor_formatter(seconds_formatter)
+                ax_md_s.xaxis.set_major_formatter(div_by_1000_and_round)
+                ax_md_s.xaxis.set_minor_formatter(div_by_1000_and_round)
+
+                ax_md_s.yaxis.set_major_formatter(div_by_1000_and_round)
+                ax_md_s.yaxis.set_minor_formatter(div_by_1000_and_round)
 
             else:
                 assert subject == "var_count"
@@ -117,14 +123,14 @@ def benchmark_plot(iter_number: int):
                 ax_s_md.set_xlabel("Variable count")
                 ax_s_md.set_ylabel("Average monadic decomposition performance (seconds)")
 
-                ax_s_md.yaxis.set_major_formatter(seconds_formatter)
-                ax_s_md.yaxis.set_minor_formatter(seconds_formatter)
+                ax_s_md.yaxis.set_major_formatter(div_by_1000_and_round)
+                ax_s_md.yaxis.set_minor_formatter(div_by_1000_and_round)
 
                 ax_md_s.set_xlabel("monadic decomposition performance (seconds)")
                 ax_md_s.set_ylabel("Average variable count")
 
-                ax_md_s.xaxis.set_major_formatter(seconds_formatter)
-                ax_md_s.xaxis.set_minor_formatter(seconds_formatter)
+                ax_md_s.xaxis.set_major_formatter(div_by_1000_and_round)
+                ax_md_s.xaxis.set_minor_formatter(div_by_1000_and_round)
 
             save_as_img(fig_s_md, "md_%s_r" % subject)
             save_as_img(fig_md_s, "md_%s" % subject)
