@@ -364,7 +364,7 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5,
                 smaller_bound = smaller_bound.bit_length()
                 log_count += 1
 
-            logger.info("min k such that decomposition with bound log^k(B) is consistent: %d", log_count)
+            logger.info("max{k:decomposition with bound log^k(B) is consistent} = %d", log_count)
 
             try:
                 start_nanos = time.perf_counter_ns()

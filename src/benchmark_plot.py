@@ -40,14 +40,14 @@ def benchmark_plot(iter_number: int):
 
         fig, ax = simple_plot(npz["x"], npz["y"])
         ax.set_xlabel("Bit length of B")
-        ax.set_ylabel("avg(min{k:decomposition with bound log^k(B) is consistent})")
+        ax.set_ylabel("avg(max{k:decomposition with bound log^k(B) is consistent})")
 
         save_as_img(fig, "bound_log_count_until_inc")
 
     with load_npz("bound_log_count_until_inc_r", iter_number) as npz:
 
         fig, ax = simple_plot(npz["x"], npz["y"])
-        ax.set_xlabel("min{k:decomposition with bound log^k(B) is consistent}")
+        ax.set_xlabel("max{k:decomposition with bound log^k(B) is consistent}")
         ax.set_ylabel("Average bit length of B")
 
         save_as_img(fig, "bound_log_count_until_inc_r")
