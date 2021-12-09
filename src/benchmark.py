@@ -48,17 +48,44 @@ def remove_unparsable_benchmarks():
     logger.info("Done - removed: %d remaining: %d", removed_count, remaining_count)
 
 
-def benchmark_smts(file_size_limit: int):
+def benchmark_smts(file_size_limit: int = 0, z3_sat_check_timeout_ms: int = 0):
     assert file_size_limit >= 0
 
     for root, dirs, files in os.walk(_resolve_benchmark_root()):
         for file in files:
             full_file_path = os.path.join(root, file)
 
-            assert os.path.isfile(full_file_path)
+            if not os.path.isfile(full_file_path):
+                logger.warning("File '%s' could not be found, was it deleted?", full_file_path)
+                continue
+
+            if not full_file_path.endswith(".smt2"):
+                logger.warning("Cannot handle file '%s' due to unknown extention.", full_file_path)
+                continue
 
             if file_size_limit != 0 and os.path.getsize(full_file_path) > file_size_limit:
                 continue
+
+            if z3_sat_check_timeout_ms > 0:
+
+                timeout_s = (z3_sat_check_timeout_ms // 1000) + 1
+
+                result = subprocess.run(["z3", "-T:%d" % timeout_s,
+                                         "-t:%d" % z3_sat_check_timeout_ms, "--", full_file_path], capture_output=True)
+
+                if result.returncode != 0:
+                    logger.warning("z3 terminated with nonzero exit code %d", result.returncode)
+
+                result = result.stdout.decode("utf-8").rstrip()
+
+                if result.startswith("unknown") or result.startswith("timeout"):
+                    logger.warning("z3 has failed to solve the problem in '%s' within %d ms, "
+                                   "ignoring this instance.", full_file_path, z3_sat_check_timeout_ms)
+                    continue
+
+                if not result.startswith("sat") and not result.startswith("unsat"):
+                    logger.error("unknown z3 output: %s", result)
+                    continue
 
             try:
                 yield parse_smt2_file(full_file_path), full_file_path
@@ -213,7 +240,6 @@ class BenchmarkContext:
             logger.error("Inconsistency in '%s' on variable '%s'", self._cur_smt_path, self._cur_phi_var)
 
     def log_stats(self):
-        logger.info("Printing current statistics:")
         logger.info("Inconsistencies so far: %5d", self._inconsistencies)
         logger.info("Benchmark runs: With bound: %d Without bound: %d",
                     self._md_counter, self._md_wb_counter)
@@ -269,30 +295,9 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5,
 
     logger.info("Benchmark started.")
 
-    for smt, smt_path in benchmark_smts(file_size_limit):
+    for smt, smt_path in benchmark_smts(file_size_limit, z3_sat_check_timeout_ms):
 
         logger.info("Iteration: %06d Considering '%s'", ctx.get_iteration_number(), smt_path)
-
-        if z3_sat_check_timeout_ms > 0:
-
-            timeout_s = (z3_sat_check_timeout_ms // 1000) + 1
-
-            result = subprocess.run(["z3", "-T:%d" % timeout_s,
-                                     "-t:%d" % z3_sat_check_timeout_ms, "--", smt_path], capture_output=True)
-
-            if result.returncode != 0:
-                logger.warning("z3 terminated with nonzero exit code %d", result.returncode)
-
-            result = result.stdout.decode("utf-8").rstrip()
-
-            if result.startswith("unknown") or result.startswith("timeout"):
-                logger.warning("z3 has failed to solve the problem in '%s' within %d ms, "
-                               "ignoring this instance.", smt_path, z3_sat_check_timeout_ms)
-                continue
-
-            if not result.startswith("sat") and not result.startswith("unsat"):
-                logger.error("unknown z3 output: %s", result)
-                continue
 
         try:
             phi = And([f for f in smt])
