@@ -9,7 +9,7 @@ import numpy as np
 from z3 import *
 
 from presmondec import monadic_decomposable, monadic_decomposable_without_bound, compute_bound, MonDecTestFailed
-from utils import get_formula_variables, Z3CliError
+from utils import get_formula_variables, Z3CliError, timeout_ms_to_s
 
 logger = logging.getLogger("premondec_benchmark")
 logger.setLevel(logging.DEBUG)
@@ -68,7 +68,7 @@ def benchmark_smts(file_size_limit: int = 0, z3_sat_check_timeout_ms: int = 0):
 
             if z3_sat_check_timeout_ms > 0:
 
-                timeout_s = (z3_sat_check_timeout_ms // 1000) + 1
+                timeout_s = timeout_ms_to_s(z3_sat_check_timeout_ms)
 
                 result = subprocess.run(["z3", "-T:%d" % timeout_s,
                                          "-t:%d" % z3_sat_check_timeout_ms, "--", full_file_path], capture_output=True)

@@ -50,9 +50,15 @@ class Z3CliError(Exception):
     pass
 
 
+def timeout_ms_to_s(timeout_ms: int):
+    if timeout_ms % 1000 == 0:
+        return timeout_ms // 1000
+    return (timeout_ms // 1000) + 1
+
+
 def run_z3_cli(smt_string, timeout_ms):
 
-    timeout_s = (timeout_ms // 1000) + 1
+    timeout_s = timeout_ms_to_s(timeout_ms)
 
     tmp = tempfile.NamedTemporaryFile(delete=False, mode="w")
 
