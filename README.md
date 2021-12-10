@@ -113,5 +113,5 @@ TODO
 
 ![variable count and bitlength of bound comparison](benchmark_results/var_count_bound.svg)
 
-![analysis of how efficient the bound is](benchmark_results/bound_log_count_until_inc.svg)
 ![analysis of how efficient the bound is](benchmark_results/bound_log_count_until_inc_r.svg)
+![analysis of how efficient the bound is](benchmark_results/bound_log_count_until_inc.svg)
