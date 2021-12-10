@@ -74,7 +74,7 @@ def benchmark_smts(file_size_limit: int = 0, z3_sat_check_timeout_ms: int = 0):
                                          "-t:%d" % z3_sat_check_timeout_ms, "--", full_file_path], capture_output=True)
 
                 if result.returncode != 0:
-                    logger.warning("z3 terminated with nonzero exit code %d", result.returncode)
+                    logger.warning("z3 terminated with nonzero exit code %d on '%s'", result.returncode, full_file_path)
 
                 result = result.stdout.decode("utf-8").rstrip()
 
@@ -84,7 +84,7 @@ def benchmark_smts(file_size_limit: int = 0, z3_sat_check_timeout_ms: int = 0):
                     continue
 
                 if not result.startswith("sat") and not result.startswith("unsat"):
-                    logger.error("unknown z3 output: %s", result)
+                    logger.error("unknown z3 output: %s (file: '%s')", result, full_file_path)
                     continue
 
             try:
@@ -306,14 +306,18 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5,
 
             phi = And([phi] + [v >= 0 for v in phi_vars])
         except TypeError:
-            logger.warning("Could not cleanup formula, ignoring it - is it a valid presburger arithmetic formula?")
+            logger.error("Could not construct a valid Presburger arithmetic formula from the smt2 file.")
             continue
 
-        start_nanos = time.perf_counter_ns()
-        b = compute_bound(phi)
-        end_nanos = time.perf_counter_ns()
+        try:
+            start_nanos = time.perf_counter_ns()
+            b = compute_bound(phi)
+            end_nanos = time.perf_counter_ns()
 
-        bound_b_computation_time = end_nanos - start_nanos
+            bound_b_computation_time = end_nanos - start_nanos
+        except MonDecTestFailed as e:
+            logger.warning("Could not compute bound: %s", str(e))
+            continue
 
         b_bit_length = b.bit_length()
 

@@ -20,7 +20,7 @@ def compute_bound(f) -> int:
             return 0, 0, 1
 
         if not is_app(node):
-            raise Exception("The AST of the formula contains a leaf that is not a integer constant")
+            raise MonDecTestFailed("the AST of the formula contains a leaf that is not a integer constant")
 
         max_d = 1
         linear_equality_count = 0
@@ -71,7 +71,12 @@ def compute_bound(f) -> int:
     else:
         d, n, m = ast_visitor(f)
 
-    return 8 << (d * n * m)
+    final_shift = d * n * m + 3
+
+    if final_shift > 100000:
+        raise MonDecTestFailed("exponent is galactic: %d" % (final_shift + 1))
+
+    return 1 << final_shift
 
 
 def congruent(lhs, rhs, modulo):
