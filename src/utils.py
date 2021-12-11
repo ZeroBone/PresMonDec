@@ -37,13 +37,24 @@ def is_uninterpreted_variable(node):
 def get_formula_variables(f):
 
     vars_set = set()
+    visited = set()
 
     def ast_visitor(node):
         if is_uninterpreted_variable(node):
             vars_set.add(wrap_ast_ref(node))
         else:
             for child in node.children():
+
+                child_wrapped = wrap_ast_ref(child)
+
+                if child_wrapped in visited:
+                    continue
+
+                visited.add(child_wrapped)
+
                 ast_visitor(child)
+
+    visited.add(wrap_ast_ref(f))
 
     try:
         ast_visitor(f)

@@ -74,17 +74,17 @@ def benchmark_smts(file_size_limit: int = 0, z3_sat_check_timeout_ms: int = 0):
                                          "-t:%d" % z3_sat_check_timeout_ms, "--", full_file_path], capture_output=True)
 
                 if result.returncode != 0:
-                    logger.warning("z3 terminated with nonzero exit code %d on '%s'", result.returncode, full_file_path)
+                    logger.warning("Z3 terminated with nonzero exit code %d on '%s'", result.returncode, full_file_path)
 
                 result = result.stdout.decode("utf-8").rstrip()
 
                 if result.startswith("unknown") or result.startswith("timeout"):
-                    logger.warning("z3 has failed to solve the problem in '%s' within %d ms, "
+                    logger.warning("Z3 has failed to solve '%s' within %d ms, "
                                    "ignoring this instance.", full_file_path, z3_sat_check_timeout_ms)
                     continue
 
                 if not result.startswith("sat") and not result.startswith("unsat"):
-                    logger.error("unknown z3 output: %s (file: '%s')", result, full_file_path)
+                    logger.error("Unknown z3 output: %s (file: '%s')", result, full_file_path)
                     continue
 
             try:
@@ -240,7 +240,7 @@ class BenchmarkContext:
             logger.error("Inconsistency in '%s' on variable '%s'", self._cur_smt_path, self._cur_phi_var)
 
     def log_stats(self):
-        logger.info("Inconsistencies so far: %5d", self._inconsistencies)
+        logger.info("Inconsistencies: %5d", self._inconsistencies)
         logger.info("Benchmark runs: With bound: %d Without bound: %d",
                     self._md_counter, self._md_wb_counter)
         logger.info("Benchmark failed runs: With bound: %d Without bound: %d",

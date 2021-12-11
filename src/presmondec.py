@@ -47,6 +47,8 @@ def compute_bound(f) -> int:
 
         return max_d, linear_equality_count, variable_count
 
+    visited.add(wrap_ast_ref(f))
+
     try:
         if f.decl().name() == "or":
 
@@ -137,7 +139,7 @@ def _same_div(x_1, x_2, x, phi):
 
             detect_div_constraints(child)
 
-    visited.add(phi)
+    visited.add(wrap_ast_ref(phi))
 
     try:
         detect_div_constraints(phi)
