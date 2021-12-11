@@ -61,13 +61,12 @@ def benchmark_plot(iter_number: int):
 
         ax.grid(zorder=0)
 
-        avg_values_legend = ax.scatter(x, y, alpha=.7, color="blue", zorder=3)
-        cumsum_legend = ax.scatter(x, y.cumsum(), alpha=.7, color="orange", zorder=3)
+        avg_values_legend = ax.scatter(x, y, alpha=.7, color="blue", zorder=3, label="Value")
+        cumsum, = ax.plot(x, y.cumsum(), color="orange", zorder=4, label="Cumulative sum")
 
         ax.legend(
-            (avg_values_legend, cumsum_legend),
-            ("Value", "Cumulative sum"),
-            loc="upper left"
+            loc="upper left",
+            handles=[avg_values_legend, cumsum]
         )
 
         ax.set_xlabel("Variable count")
