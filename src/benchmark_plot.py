@@ -54,7 +54,22 @@ def benchmark_plot(iter_number: int):
 
     with load_npz("var_count_bound", iter_number) as npz:
 
-        fig, ax = simple_plot(npz["x"], npz["y"])
+        x = npz["x"]
+        y = npz["y"]
+
+        fig, ax = plt.subplots()
+
+        ax.grid(zorder=0)
+
+        avg_values_legend = ax.scatter(x, y, alpha=.7, color="blue", zorder=3)
+        cumsum_legend = ax.scatter(x, y.cumsum(), alpha=.7, color="orange", zorder=3)
+
+        ax.legend(
+            (avg_values_legend, cumsum_legend),
+            ("Value", "Cumulative sum"),
+            loc="upper left"
+        )
+
         ax.set_xlabel("Variable count")
         ax.set_ylabel("Average bit length of B")
 
