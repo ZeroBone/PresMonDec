@@ -47,7 +47,7 @@ def get_formula_variables(f):
 
     try:
         ast_visitor(f)
-    except RecursionError:
+    except (RecursionError, ctypes.ArgumentError):
         raise TooDeepFormulaError()
 
     return vars_set

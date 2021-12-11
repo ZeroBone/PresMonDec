@@ -71,7 +71,7 @@ def compute_bound(f) -> int:
 
         else:
             d, n, m = ast_visitor(f)
-    except RecursionError:
+    except (RecursionError, ctypes.ArgumentError):
         raise MonDecTestFailed("recursion error: stack overflow")
 
     final_shift = d * n * m + 3
@@ -141,7 +141,7 @@ def _same_div(x_1, x_2, x, phi):
 
     try:
         detect_div_constraints(phi)
-    except RecursionError:
+    except (RecursionError, ctypes.ArgumentError):
         raise MonDecTestFailed("recursion error: stack overflow")
 
     return And([
