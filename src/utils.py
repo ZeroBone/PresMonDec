@@ -3,6 +3,10 @@ import tempfile
 from z3 import *
 
 
+class TooDeepFormulaError(Exception):
+    pass
+
+
 class AstReferenceWrapper:
 
     def __init__(self, node):
@@ -41,7 +45,10 @@ def get_formula_variables(f):
             for child in node.children():
                 ast_visitor(child)
 
-    ast_visitor(f)
+    try:
+        ast_visitor(f)
+    except RecursionError:
+        raise TooDeepFormulaError()
 
     return vars_set
 

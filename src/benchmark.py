@@ -9,7 +9,7 @@ import numpy as np
 from z3 import *
 
 from presmondec import monadic_decomposable, monadic_decomposable_without_bound, compute_bound, MonDecTestFailed
-from utils import get_formula_variables, Z3CliError, timeout_ms_to_s
+from utils import get_formula_variables, Z3CliError, timeout_ms_to_s, TooDeepFormulaError
 
 logger = logging.getLogger("premondec_benchmark")
 logger.setLevel(logging.DEBUG)
@@ -305,6 +305,9 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5,
             var_count = len(phi_vars)
 
             phi = And([phi] + [v >= 0 for v in phi_vars])
+        except TooDeepFormulaError:
+            logger.warning("Formula AST is too deep to traverse.")
+            continue
         except TypeError:
             logger.error("Could not construct a valid Presburger arithmetic formula from the smt2 file.")
             continue

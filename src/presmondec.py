@@ -1,5 +1,5 @@
 from z3 import *
-from utils import wrap_ast_ref, is_uninterpreted_variable, get_formula_variables, run_z3_cli
+from utils import wrap_ast_ref, is_uninterpreted_variable, get_formula_variables, run_z3_cli, TooDeepFormulaError
 
 
 class MonDecTestFailed(Exception):
@@ -47,29 +47,32 @@ def compute_bound(f) -> int:
 
         return max_d, linear_equality_count, variable_count
 
-    if f.decl().name() == "or":
+    try:
+        if f.decl().name() == "or":
 
-        d = 1
-        n = 0
-        m = 0
+            d = 1
+            n = 0
+            m = 0
 
-        for child in f.children():
+            for child in f.children():
 
-            child_wrapped = wrap_ast_ref(child)
+                child_wrapped = wrap_ast_ref(child)
 
-            if child_wrapped in visited:
-                continue
+                if child_wrapped in visited:
+                    continue
 
-            visited.add(child_wrapped)
+                visited.add(child_wrapped)
 
-            cur_d, cur_n, cur_m = ast_visitor(child)
+                cur_d, cur_n, cur_m = ast_visitor(child)
 
-            d = max(d, cur_d)
-            n = max(n, cur_n)
-            m += cur_m
+                d = max(d, cur_d)
+                n = max(n, cur_n)
+                m += cur_m
 
-    else:
-        d, n, m = ast_visitor(f)
+        else:
+            d, n, m = ast_visitor(f)
+    except RecursionError:
+        raise MonDecTestFailed("recursion error: stack overflow")
 
     final_shift = d * n * m + 3
 
@@ -135,9 +138,11 @@ def _same_div(x_1, x_2, x, phi):
             detect_div_constraints(child)
 
     visited.add(phi)
-    detect_div_constraints(phi)
 
-    # print("Divisibility constraints found:", div_constraints)
+    try:
+        detect_div_constraints(phi)
+    except RecursionError:
+        raise MonDecTestFailed("recursion error: stack overflow")
 
     return And([
         _same_div_transform_constraint(x_1, x_2, x, c)
@@ -167,7 +172,11 @@ def monadic_decomposable(f, x, b=None, timeout_ms=0) -> bool:
 
     sd = _same_div(x_1, x_2, x, f)
 
-    vars_except_x = get_formula_variables(f)
+    try:
+        vars_except_x = get_formula_variables(f)
+    except TooDeepFormulaError:
+        raise MonDecTestFailed("formula AST is too deep to traverse")
+
     vars_except_x.remove(wrap_ast_ref(x))
 
     mon_dec_formula = Exists([x_1, x_2, *[v.unwrap() for v in vars_except_x]], And(
@@ -201,7 +210,11 @@ def _equiv(phi, x, a, b):
     :return: formula describing the equivalence relation
     """
 
-    phi_vars_except_x = get_formula_variables(phi)
+    try:
+        phi_vars_except_x = get_formula_variables(phi)
+    except TooDeepFormulaError:
+        raise MonDecTestFailed("formula AST is too deep to traverse")
+
     phi_vars_except_x.remove(wrap_ast_ref(x))
 
     phi_vars_except_x_new = {}
@@ -289,9 +302,9 @@ if __name__ == "__main__":
         print("Not monadically decomposable")
 
     print("=" * 30)
-    print("Caution: this may take a lot of time to compute")
+    print("Caution: this may fail with a timeout error")
 
-    if monadic_decomposable_without_bound(phi, x, b):
+    if monadic_decomposable_without_bound(phi, x, b, 5000):
         print("Monadically decomposable")
     else:
         print("Not monadically decomposable")
