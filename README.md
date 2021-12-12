@@ -99,7 +99,7 @@ print("Monadically decomposable on x:", dec)
 
 # Benchmark
 
-Both monadic decomposability checking methods can be tested on a big dataset of formulas (located in the `benchmark` directory) by running
+Both monadic decomposability checking methods can be tested on a big dataset of formulas by running
 ```
 python benchmark.py
     [ITERATION_LIMIT]
@@ -114,6 +114,22 @@ where the five command-line arguments mean the following:
 3. *Optional*: `[SAT_CHECK_TIMEOUT_MS]`: if some formula cannot be solved by `z3` within this amount of milliseconds, then the formula gets ignored by the benchmark. Set this parameter to `0` to disable prior running of `z3` to determine how fast satisfiability of a formula can be determined. **Default value**: `0`
 4. *Optional*: `[Z3_TIMEOUT_MS]`: If a `z3` call initiated from inside a monadic decomposition check fails to produce an answer within the amount of milliseconds specified by this argument, `z3` is aborted. Set this parameter to `0` to disable the timeout. **Default value**: `0`
 5. *Optional*: `[FILE_SIZE_LIMIT_KB]` is the maximum `.smt2` file size in kilobytes, any files exceeding this limit will be ignored by the benchmark. If this parameter is set to `0`, the benchmark will consider all files regardless of their size. **Default value**: `0`   
+
+The benchmark expects the input formulas to be in `.smt2` format in the `benchmark` directory.
+In case that directory contains subdirectories, they will be traversed recursively.
+During benchmarking, the following data is written to the `benchmark_results` directory:
+* Current statistical data, in (numpy) `.npz` file format. The files are prefixed by the iteration number after which the data was exported.
+* Logs are written to the `benchmark.log` file. In linux, they can be viewed live by running `tail -f benchmark.log`.
+
+After benchmarking is complete, the final statistical data is also exported in the `.npz` format. The next section explains how to use this data. 
+
+## Plotting the results
+
+Once the benchmark is complete, the plots can be produced from the `.npz` files by running
+```
+benchmark_plot.py [ITER_NUMBER]
+```
+where `[ITER_NUMBER]` is the iteration number, which is the prefix of the `.npz` files containing data collected by the benchmark up to that iteration. Plotting will fail if there are no `.npz` files produced by the benchmark for the specified iteration number.
 
 ## Results
 
