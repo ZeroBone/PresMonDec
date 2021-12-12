@@ -99,7 +99,7 @@ print("Monadically decomposable on x:", dec)
 
 # Benchmark
 
-Both monadic decomposability checking methods can be tested on a big dataset of formulas by running
+Both monadic decomposability checking methods can be tested on a (possibly very big) dataset of formulas by running
 ```
 python benchmark.py
     [ITERATION_LIMIT]
@@ -133,14 +133,40 @@ where `[ITER_NUMBER]` is the iteration number, which is the prefix of the `.npz`
 
 ## Results
 
+The following results were obtained by running the benchmark on the entire [QF_LIA database](https://clc-gitlab.cs.uiowa.edu:2443/SMT-LIB-benchmarks/QF_LIA) containing approximately 2.1 GB of linear integer arithmetic formulas.
+
+The benchmark was run with the following parameters:
+* No iteration limit
+* Maximum number of variables per formula: 2
+* Sat check timeout: 2000 ms = 2 seconds
+* Z3 timeout: 16000 ms = 16 seconds
+* File size limit: 1000 KB = 1 MB
+
+The following table illustrates how many times each monadic decomposition method was run and what the error/success rate was:
+
+| Monadic decomposition |   With bound    |  Without bound  |
+| :-------------------: | :-------------: | :-------------: |
+|   Executed (times)    |      4058       |      3985       |
+|   Succeeded (times)   | 3985 (**≈98%**) | 1575 (**≈39%**) |
+|    Failed (times)     |  73 (**≈1%**)   | 2410 (**≈60%**) |
+
+This shows that the monadic decomposition method with bound is much more reliable compared to the version without the bound. We can compare the performance of both methods by considering the following plots:
+
 ![smt2 file size and average mondec performance comparison](benchmark_results/md_file_size_r.png)
 ![average mondec performance and smt2 file size comparison](benchmark_results/md_file_size.png)
 
 ![variable count and average mondec performance comparison](benchmark_results/md_var_count_r.png)
 ![average mondec performance and variable count comparison](benchmark_results/md_var_count.png)
 
+The amount of variables seems to have some correlation with the average bit length of the bound `B`:
+
 ![variable count and bitlength of bound comparison](benchmark_results/var_count_bound_simple.png)
 ![variable count and bitlength of bound comparison](benchmark_results/var_count_bound.png)
 
+This plot clearly demonstrates that in the vast majority of cases, `B` is significantly larger compared to the real (tight) bound which would suffice. More precisely, in more than 97% of cases, we can reduce `B` to `log(log(B))` and obtain a consistent monadic decomposability result. And in more than 13% of cases, `B` can be even reduced to `log(log(log(log(B))))`.
+
 ![analysis of how efficient the bound is](benchmark_results/log_count_until_inc_dist.png)
+
+This plot illustrates what values of `B` caused the distribution illustrated above:
+
 ![analysis of how efficient the bound is](benchmark_results/bound_log_count_until_inc_r.png)
