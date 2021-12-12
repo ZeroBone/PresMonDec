@@ -1,6 +1,6 @@
 # PresMonDec
 
-PresMonDec is at tool that checks whether a quantifier-free Formula in Presburger arithmetic is monadically decomposable. Congruence relations are supported.
+PresMonDec is a tool that checks whether a quantifier-free formula in Presburger arithmetic is monadically decomposable. Congruence relations are supported.
 
 # Installation
 
@@ -9,7 +9,7 @@ Following dependencies have to be installed in order to be able to use all featu
 * [numpy](https://numpy.org/)
 * [matplotlib](https://matplotlib.org/)
 
-Only `z3` is however mandatory for the decomposition checkers.
+Only `z3` is mandatory for the decomposition checkers.
 
 To install `z3`, follow the official tutorial for your operating system.
 Please note that `z3` should be available as a CLI service for the monadic decomposition to work when the timeout is specified explicitly (see the [Usage](#Usage) section below).
@@ -24,7 +24,7 @@ pip install matplotlib
 Two different decomposability checking methods for Presburger arithmetic (over natural numbers) are implemented. Both of them can be used by importing the `src/presmondec.py` module.
 
 The decomposability checkers support modular arithmetic, i.e. congruence relations like `5 * x ≡ 3 * y mod 7`. These relations must however be constructed using the `congruent` function defined in the same module.
-The arguments are the left and right-hand sides as well as the modulo which must be a constant. So, for example, the above statement must be constructed using
+The arguments are the left- and right-hand sides as well as the modulo, which must be a constant. For example, the above statement must be constructed using
 ```python
 from z3 import *
 from presmondec import congruent
@@ -33,7 +33,7 @@ x, y = Ints("x y z")
 expr = congruent(5 * x, 3 * y, 7)
 ```
 Also, the monadic decomposition may not work if the formula has satisfying assignments where some variable values are negative.
-It is therefore required to add `x >= 0` constraints for all variables `x` if the formula doesn't already restrict negative values for variables. 
+It is therefore important to add `x >= 0` constraints for all variables `x` if the formula doesn't already restrict negative values for variables. 
 
 ## First method
 
