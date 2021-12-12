@@ -38,7 +38,7 @@ It is therefore important to add `x >= 0` constraints for all variables `x` if t
 ## First method
 
 The first method is based on the [Monadic Decomposition in Integer Linear Arithmetic](https://arxiv.org/abs/2004.12371) paper by Matthew Hague, Anthony Widjaja Lin, Philipp Rümmer and Zhilin Wu.
-It is important that there, a bound `B` for essentially the maximum value the formula can "address explicitly" is computed before constructing a formula for `z3` that expresses the fact that the formula given is monadically decomposable.
+It is important that there, a bound `B` for essentially the maximum value the formula can "address explicitly" is computed before constructing a formula for `z3` that expresses the fact that the given formula is monadically decomposable.
 
 To use this method, call the `monadic_decomposable` function from the `src/presmondec.py` module.
 The arguments are:
@@ -101,23 +101,16 @@ print("Monadically decomposable on x:", dec)
 
 Both monadic decomposability checking methods can be tested on a (possibly very big) dataset of formulas by running
 ```
-python benchmark.py
-    [ITERATION_LIMIT]
-    [VARS_PER_FORMULA_LIMIT]
-    [SAT_CHECK_TIMEOUT_MS]
-    [Z3_TIMEOUT_MS]
-    [FILE_SIZE_LIMIT_KB]
+python benchmark.py [ITERATION_LIMIT] [VARS_PER_FORMULA_LIMIT] [SAT_CHECK_TIMEOUT_MS] [Z3_TIMEOUT_MS] [FILE_SIZE_LIMIT_KB]
 ```
-where the five command-line arguments mean the following:
-1. `[ITERATION_LIMIT]` is the maximum amount of formulas which should be successfully considered by the benchmark, where "successfully considered" means that both monadic decomposition methods succeed for the current formula. Set this parameter to `0` to allow any amount of iterations.
-2. `[VARS_PER_FORMULA_LIMIT]` is the maximum amount of variables per formula on which the formula should be monadically decomposed (with both methods). 
-3. *Optional*: `[SAT_CHECK_TIMEOUT_MS]`: if some formula cannot be solved by `z3` within this amount of milliseconds, then the formula gets ignored by the benchmark. Set this parameter to `0` to disable prior running of `z3` to determine how fast satisfiability of a formula can be determined. **Default value**: `0`
-4. *Optional*: `[Z3_TIMEOUT_MS]`: If a `z3` call initiated from inside a monadic decomposition check fails to produce an answer within the amount of milliseconds specified by this argument, `z3` is aborted. Set this parameter to `0` to disable the timeout. **Default value**: `0`
+where the five command-line arguments have the following meaning:
+1. `[ITERATION_LIMIT]` is the maximum amount of formulas which should be considered by the benchmark without any errors - this means that both monadic decomposition methods should succeed for the current formula. Set this parameter to `0` to allow any amount of iterations.
+2. `[VARS_PER_FORMULA_LIMIT]` is the maximum amount of variables per formula on which the formula should be monadically decomposed (using both methods). 
+3. *Optional*: `[SAT_CHECK_TIMEOUT_MS]`: if some formula cannot be solved by `z3` within this amount of milliseconds, then the formula gets ignored by the benchmark. Set this parameter to `0` to disable prior running of `z3` to determine how fast it can determine satisfiability of a formula. **Default value**: `0`
+4. *Optional*: `[Z3_TIMEOUT_MS]`: If a `z3` call initiated from inside a monadic decomposition check fails to produce an answer within the amount of milliseconds specified by this argument, `z3` is aborted and the benchmark considers the monadic decomposition method to have failed on the current formula & variable. Set this parameter to `0` to disable the timeout. **Default value**: `0`
 5. *Optional*: `[FILE_SIZE_LIMIT_KB]` is the maximum `.smt2` file size in kilobytes, any files exceeding this limit will be ignored by the benchmark. If this parameter is set to `0`, the benchmark will consider all files regardless of their size. **Default value**: `0`   
 
-The benchmark expects the input formulas to be in `.smt2` format in the `benchmark` directory.
-In case that directory contains subdirectories, they will be traversed recursively.
-During benchmarking, the following data is written to the `benchmark_results` directory:
+The benchmark expects the input formulas to be in `.smt2` format located in the `benchmark` directory. In case that directory contains subdirectories, they will be traversed recursively. During benchmarking, the following data is written to the `benchmark_results` directory:
 * Current statistical data, in (numpy) `.npz` file format. The files are prefixed by the iteration number after which the data was exported.
 * Logs are written to the `benchmark.log` file. In linux, they can be viewed live by running `tail -f benchmark.log`.
 
