@@ -105,13 +105,13 @@ TODO
 
 **Note**: currently those are only preliminary benchmark results
 
-![smt2 file size and average mondec performance comparison](benchmark_results/md_file_size_r.svg)
-![average mondec performance and smt2 file size comparison](benchmark_results/md_file_size.svg)
+![smt2 file size and average mondec performance comparison](benchmark_results/md_file_size_r.png)
+![average mondec performance and smt2 file size comparison](benchmark_results/md_file_size.png)
 
-![variable count and average mondec performance comparison](benchmark_results/md_var_count_r.svg)
-![average mondec performance and variable count comparison](benchmark_results/md_var_count.svg)
+![variable count and average mondec performance comparison](benchmark_results/md_var_count_r.png)
+![average mondec performance and variable count comparison](benchmark_results/md_var_count.png)
 
-![variable count and bitlength of bound comparison](benchmark_results/var_count_bound.svg)
+![variable count and bitlength of bound comparison](benchmark_results/var_count_bound.png)
 
-![analysis of how efficient the bound is](benchmark_results/bound_log_count_until_inc_r.svg)
-![analysis of how efficient the bound is](benchmark_results/bound_log_count_until_inc.svg)
+![analysis of how efficient the bound is](benchmark_results/bound_log_count_until_inc_r.png)
+![analysis of how efficient the bound is](benchmark_results/bound_log_count_until_inc.png)

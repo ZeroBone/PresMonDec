@@ -19,8 +19,8 @@ def save_as_img(fig, suffix: str):
     fig.tight_layout()
     fig.savefig(os.path.join(
         resolve_benchmark_result_root(),
-        suffix + ".svg"
-    ))
+        suffix + ".png",
+    ), dpi=512)
 
 
 def simple_plot(x_axis, y_axis):
@@ -35,6 +35,8 @@ def simple_plot(x_axis, y_axis):
 
 
 def benchmark_plot(iter_number: int):
+
+    print("Loading & plotting data...")
 
     with load_npz("bound_log_count_until_inc", iter_number) as npz:
 
@@ -51,6 +53,8 @@ def benchmark_plot(iter_number: int):
         ax.set_ylabel("Average bit length of B")
 
         save_as_img(fig, "bound_log_count_until_inc_r")
+
+    div_by_1000_and_round = ticker.FuncFormatter(lambda x, pos: "{:.2f}".format(x / 1000.))
 
     with load_npz("var_count_bound", iter_number) as npz:
 
@@ -70,11 +74,14 @@ def benchmark_plot(iter_number: int):
         )
 
         ax.set_xlabel("Variable count")
-        ax.set_ylabel("Average bit length of B")
+        ax.set_ylabel("Average bit length of B (Kbits)")
+
+        ax.yaxis.set_major_formatter(div_by_1000_and_round)
+        ax.yaxis.set_minor_formatter(div_by_1000_and_round)
+
+        ax.set_xscale("log")
 
         save_as_img(fig, "var_count_bound")
-
-    div_by_1000_and_round = ticker.FuncFormatter(lambda x, pos: "{:.2f}".format(x / 1000.))
 
     for subject in ["file_size", "var_count"]:
         with load_npz("md_%s" % subject, iter_number) as md_subject,\
@@ -103,36 +110,47 @@ def benchmark_plot(iter_number: int):
             ]:
                 ax.grid(zorder=0)
 
+                x = np.array(x, dtype=float)
+                y = np.array(y, dtype=float)
+
+                x_wb = np.array(x_wb, dtype=float)
+                y_wb = np.array(y_wb, dtype=float)
+
                 with_bound = ax.scatter(x, y, alpha=.7, color="blue", zorder=3)
                 without_bound = ax.scatter(x_wb, y_wb, alpha=.7, color="orange", zorder=3)
 
                 ax.legend(
                     (with_bound, without_bound),
                     ("With bound", "Without bound"),
-                    loc="upper right"
+                    loc="upper left"
                 )
 
             if subject == "file_size":
-                ax_s_md.set_xlabel(".smt2 file size (KB)")
-                ax_s_md.set_ylabel("Average monadic decomposition performance (seconds)")
 
-                ax_s_md.xaxis.set_major_formatter(div_by_1000_and_round)
-                ax_s_md.xaxis.set_minor_formatter(div_by_1000_and_round)
+                # subject to performance axis
+
+                ax_s_md.set_xlabel(".smt2 file size (bytes)")
+                ax_s_md.set_ylabel("Average monadic decomposition performance (seconds)")
 
                 ax_s_md.yaxis.set_major_formatter(div_by_1000_and_round)
                 ax_s_md.yaxis.set_minor_formatter(div_by_1000_and_round)
 
+                ax_s_md.set_xscale("log")
+
+                # performance to subject axis
+
                 ax_md_s.set_xlabel("monadic decomposition performance (seconds)")
-                ax_md_s.set_ylabel("Average .smt2 file size (KB)")
+                ax_md_s.set_ylabel("Average .smt2 file size (bytes)")
 
                 ax_md_s.xaxis.set_major_formatter(div_by_1000_and_round)
                 ax_md_s.xaxis.set_minor_formatter(div_by_1000_and_round)
 
-                ax_md_s.yaxis.set_major_formatter(div_by_1000_and_round)
-                ax_md_s.yaxis.set_minor_formatter(div_by_1000_and_round)
+                ax_md_s.set_yscale("log")
 
             else:
                 assert subject == "var_count"
+
+                # subject to performance axis
 
                 ax_s_md.set_xlabel("Variable count")
                 ax_s_md.set_ylabel("Average monadic decomposition performance (seconds)")
@@ -140,11 +158,17 @@ def benchmark_plot(iter_number: int):
                 ax_s_md.yaxis.set_major_formatter(div_by_1000_and_round)
                 ax_s_md.yaxis.set_minor_formatter(div_by_1000_and_round)
 
+                ax_s_md.set_xscale("log")
+
+                # performance to subject axis
+
                 ax_md_s.set_xlabel("monadic decomposition performance (seconds)")
                 ax_md_s.set_ylabel("Average variable count")
 
                 ax_md_s.xaxis.set_major_formatter(div_by_1000_and_round)
                 ax_md_s.xaxis.set_minor_formatter(div_by_1000_and_round)
+
+                ax_md_s.set_yscale("log")
 
             save_as_img(fig_s_md, "md_%s_r" % subject)
             save_as_img(fig_md_s, "md_%s" % subject)
@@ -158,3 +182,4 @@ if __name__ == "__main__":
         iter_number = int(sys.argv[1])
         assert iter_number >= 1
         benchmark_plot(iter_number)
+        print("Done.")
