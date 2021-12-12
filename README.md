@@ -133,7 +133,7 @@ where `[ITER_NUMBER]` is the iteration number, which is the prefix of the `.npz`
 
 ## Results
 
-The following results were obtained by running the benchmark on the entire [QF_LIA database](https://clc-gitlab.cs.uiowa.edu:2443/SMT-LIB-benchmarks/QF_LIA) containing approximately 2.1 GB of linear integer arithmetic formulas.
+Following results were obtained by running the benchmark on the entire [QF_LIA database](https://clc-gitlab.cs.uiowa.edu:2443/SMT-LIB-benchmarks/QF_LIA) containing approximately 2.1 GB of linear integer arithmetic formulas.
 
 The benchmark was run with the following parameters:
 * No iteration limit
@@ -142,7 +142,7 @@ The benchmark was run with the following parameters:
 * Z3 timeout: 16000 ms = 16 seconds
 * File size limit: 1000 KB = 1 MB
 
-The following table illustrates how many times each monadic decomposition method was run and what the error/success rate was:
+This table illustrates how many times each monadic decomposition method was run and what the error/success rate was:
 
 | Monadic decomposition |   With bound    |  Without bound  |
 | :-------------------: | :-------------: | :-------------: |
@@ -150,7 +150,7 @@ The following table illustrates how many times each monadic decomposition method
 |   Succeeded (times)   | 3985 (**≈98%**) | 1575 (**≈39%**) |
 |    Failed (times)     |  73 (**≈1%**)   | 2410 (**≈60%**) |
 
-This shows that the monadic decomposition method with bound is much more reliable compared to the version without the bound. We can compare the performance of both methods by considering the following plots:
+We can therefore conclude that the monadic decomposition method with bound is much more reliable compared to the version without the bound. We can compare the performance of both methods by considering the following plots:
 
 ![smt2 file size and average mondec performance comparison](benchmark_results/md_file_size_r.png)
 ![average mondec performance and smt2 file size comparison](benchmark_results/md_file_size.png)
