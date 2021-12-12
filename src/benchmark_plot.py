@@ -20,7 +20,7 @@ def save_as_img(fig, suffix: str):
     fig.savefig(os.path.join(
         resolve_benchmark_result_root(),
         suffix + ".png",
-    ), dpi=512)
+    ), dpi=300)
 
 
 def simple_plot(x_axis, y_axis):
@@ -48,7 +48,15 @@ def benchmark_plot(iter_number: int):
 
     with load_npz("bound_log_count_until_inc_r", iter_number) as npz:
 
-        fig, ax = simple_plot(npz["x"], npz["y"])
+        x = npz["x"]
+        y = npz["y"]
+
+        fig, ax = plt.subplots()
+
+        ax.grid(zorder=0)
+
+        ax.plot(x, y, color="blue", alpha=.7, zorder=3)
+
         ax.set_xlabel("max{k:decomposition with bound log^k(B) is consistent}")
         ax.set_ylabel("Average bit length of B")
 
@@ -60,6 +68,22 @@ def benchmark_plot(iter_number: int):
 
         x = npz["x"]
         y = npz["y"]
+
+        # simple version
+
+        fig, ax = simple_plot(x, y)
+
+        ax.set_xlabel("Variable count")
+        ax.set_ylabel("Average bit length of B (Kbits)")
+
+        ax.yaxis.set_major_formatter(div_by_1000_and_round)
+        ax.yaxis.set_minor_formatter(div_by_1000_and_round)
+
+        ax.set_xscale("log")
+
+        save_as_img(fig, "var_count_bound_simple")
+
+        # version with cumulative sum
 
         fig, ax = plt.subplots()
 
@@ -117,7 +141,7 @@ def benchmark_plot(iter_number: int):
                 y_wb = np.array(y_wb, dtype=float)
 
                 with_bound = ax.scatter(x, y, alpha=.7, color="blue", zorder=3)
-                without_bound = ax.scatter(x_wb, y_wb, alpha=.7, color="orange", zorder=3)
+                without_bound = ax.scatter(x_wb, y_wb, alpha=.6, color="orange", zorder=4)
 
                 ax.legend(
                     (with_bound, without_bound),
@@ -174,10 +198,28 @@ def benchmark_plot(iter_number: int):
             save_as_img(fig_md_s, "md_%s" % subject)
 
 
+def benchmark_plot_logk_hist():
+
+    fig, ax = plt.subplots()
+
+    labels = np.array([0, 1, 2, 3, 4])
+    counts = np.array([51, 66, 3318, 9, 541])
+
+    bars = ax.bar(labels, counts, color="c", alpha=.7, edgecolor="k")
+    ax.bar_label(bars)
+
+    ax.set_xlabel("max{k:decomp. with bound log^k(B) is consistent}")
+    ax.set_ylabel("Occurrences")
+
+    save_as_img(fig, "log_count_until_inc_dist")
+
+
 if __name__ == "__main__":
 
     if len(sys.argv) <= 1:
         print("Usage: python benchmark_plot.py [ITERATION_NUMBER]")
+    elif "--logk_dist" in sys.argv[1:]:
+        benchmark_plot_logk_hist()
     else:
         iter_number = int(sys.argv[1])
         assert iter_number >= 1

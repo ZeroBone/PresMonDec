@@ -420,8 +420,8 @@ if __name__ == "__main__":
     elif len(sys.argv) < 3:
         print("[ITERATION_LIMIT] [VARS_PER_FORMULA_LIMIT] arguments missing")
         print("Usage: python benchmark.py [ITERATION_LIMIT] [VARS_PER_FORMULA_LIMIT]\n\t"
-              "[SAT_CHECK_TIMEOUT_MS] [Z3_TIMEOUT_MS] [FILE_SIZE_LIMIT_MiB]")
-        print("The last two arguments are optional.")
+              "[SAT_CHECK_TIMEOUT_MS] [Z3_TIMEOUT_MS] [FILE_SIZE_LIMIT_KB]")
+        print("The last three arguments are optional.")
     else:
 
         iter_limit = int(sys.argv[1])

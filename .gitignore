@@ -137,3 +137,4 @@ dmypy.json
 # Benchmark
 benchmark/*
 benchmark_results/*.npz
+benchmark_results/*.tar.gz

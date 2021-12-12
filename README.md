@@ -99,11 +99,23 @@ print("Monadically decomposable on x:", dec)
 
 # Benchmark
 
-TODO
+Both monadic decomposability checking methods can be tested on a big dataset of formulas (located in the `benchmark` directory) by running
+```
+python benchmark.py
+    [ITERATION_LIMIT]
+    [VARS_PER_FORMULA_LIMIT]
+    [SAT_CHECK_TIMEOUT_MS]
+    [Z3_TIMEOUT_MS]
+    [FILE_SIZE_LIMIT_KB]
+```
+where the five command-line arguments mean the following:
+1. `[ITERATION_LIMIT]` is the maximum amount of formulas which should be successfully considered by the benchmark, where "successfully considered" means that both monadic decomposition methods succeed for the current formula. Set this parameter to `0` to allow any amount of iterations.
+2. `[VARS_PER_FORMULA_LIMIT]` is the maximum amount of variables per formula on which the formula should be monadically decomposed (with both methods). 
+3. *Optional*: `[SAT_CHECK_TIMEOUT_MS]`: if some formula cannot be solved by `z3` within this amount of milliseconds, then the formula gets ignored by the benchmark. Set this parameter to `0` to disable prior running of `z3` to determine how fast satisfiability of a formula can be determined. **Default value**: `0`
+4. *Optional*: `[Z3_TIMEOUT_MS]`: If a `z3` call initiated from inside a monadic decomposition check fails to produce an answer within the amount of milliseconds specified by this argument, `z3` is aborted. Set this parameter to `0` to disable the timeout. **Default value**: `0`
+5. *Optional*: `[FILE_SIZE_LIMIT_KB]` is the maximum `.smt2` file size in kilobytes, any files exceeding this limit will be ignored by the benchmark. If this parameter is set to `0`, the benchmark will consider all files regardless of their size. **Default value**: `0`   
 
 ## Results
-
-**Note**: currently those are only preliminary benchmark results
 
 ![smt2 file size and average mondec performance comparison](benchmark_results/md_file_size_r.png)
 ![average mondec performance and smt2 file size comparison](benchmark_results/md_file_size.png)
@@ -111,7 +123,8 @@ TODO
 ![variable count and average mondec performance comparison](benchmark_results/md_var_count_r.png)
 ![average mondec performance and variable count comparison](benchmark_results/md_var_count.png)
 
+![variable count and bitlength of bound comparison](benchmark_results/var_count_bound_simple.png)
 ![variable count and bitlength of bound comparison](benchmark_results/var_count_bound.png)
 
+![analysis of how efficient the bound is](benchmark_results/log_count_until_inc_dist.png)
 ![analysis of how efficient the bound is](benchmark_results/bound_log_count_until_inc_r.png)
-![analysis of how efficient the bound is](benchmark_results/bound_log_count_until_inc.png)
