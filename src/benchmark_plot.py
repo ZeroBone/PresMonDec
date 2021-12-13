@@ -141,7 +141,7 @@ def benchmark_plot(iter_number: int):
                 y_wb = np.array(y_wb, dtype=float)
 
                 with_bound = ax.scatter(x, y, alpha=.7, color="blue", zorder=3)
-                without_bound = ax.scatter(x_wb, y_wb, alpha=.6, color="orange", zorder=4)
+                without_bound = ax.scatter(x_wb, y_wb, alpha=.5, color="red", zorder=4)
 
                 ax.legend(
                     (with_bound, without_bound),
