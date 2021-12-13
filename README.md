@@ -38,7 +38,7 @@ It is therefore important to add `x >= 0` constraints for all variables `x` if t
 ## First method
 
 The first method is based on the [Monadic Decomposition in Integer Linear Arithmetic](https://arxiv.org/abs/2004.12371) paper by Matthew Hague, Anthony Widjaja Lin, Philipp Rümmer and Zhilin Wu.
-It is important that there, a bound `B` for essentially the maximum value the formula can "address explicitly" is computed before constructing a formula for `z3` that expresses the fact that the given formula is monadically decomposable.
+It is important that in the implementation, an upper bound `B` for essentially the maximum value the formula can "address explicitly" is computed before constructing a `z3` formula that expresses the fact that the given formula is monadically decomposable.
 
 To use this method, call the `monadic_decomposable` function from the `src/presmondec.py` module.
 The arguments are:
@@ -130,7 +130,7 @@ Following results were obtained by running the benchmark on the entire [QF_LIA d
 
 The benchmark was run with the following parameters:
 * No iteration limit
-* Maximum number of variables per formula: 2
+* Each formula was monadically decomposed on 2 variables (i.e. `[VARS_PER_FORMULA_LIMIT]` was set to 2)
 * Sat check timeout: 2000 ms = 2 seconds
 * Z3 timeout: 16000 ms = 16 seconds
 * File size limit: 1000 KB = 1 MB
@@ -140,8 +140,8 @@ This table illustrates how many times each monadic decomposition method was run 
 | Monadic decomposition |   With bound    |  Without bound  |
 | :-------------------: | :-------------: | :-------------: |
 |   Executed (times)    |      4058       |      3985       |
-|   Succeeded (times)   | 3985 (**≈98%**) | 1575 (**≈39%**) |
-|    Failed (times)     |  73 (**≈1%**)   | 2410 (**≈60%**) |
+|   Succeeded (times)   | 3985 (≈**98%**) | 1575 (≈**40%**) |
+|    Failed (times)     |  73 (≈**2%**)   | 2410 (≈**60%**) |
 
 We can therefore conclude that the monadic decomposition method with bound is much more reliable compared to the version without the bound. We can compare the performance of both methods by considering the following plots:
 

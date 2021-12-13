@@ -208,7 +208,7 @@ def benchmark_plot_logk_hist():
     bars = ax.bar(labels, counts, color="c", alpha=.7, edgecolor="k")
     ax.bar_label(bars)
 
-    ax.set_xlabel("max{k:decomp. with bound log^k(B) is consistent}")
+    ax.set_xlabel("max{k:decomposition with bound log^k(B) is consistent}")
     ax.set_ylabel("Occurrences")
 
     save_as_img(fig, "log_count_until_inc_dist")
