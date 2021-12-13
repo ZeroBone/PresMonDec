@@ -60,6 +60,8 @@ def benchmark_plot(iter_number: int):
         ax.set_xlabel("max{k:decomposition with bound log^k(B) is consistent}")
         ax.set_ylabel("Average bit length of B")
 
+        ax.set_yscale("log")
+
         save_as_img(fig, "bound_log_count_until_inc_r")
 
     div_by_1000_and_round = ticker.FuncFormatter(lambda x, pos: "{:.2f}".format(x / 1000.))
