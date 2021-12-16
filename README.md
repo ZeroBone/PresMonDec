@@ -111,7 +111,7 @@ where the five command-line arguments have the following meaning:
 5. *Optional*: `[FILE_SIZE_LIMIT_KB]` is the maximum `.smt2` file size in kilobytes, any files exceeding this limit will be ignored by the benchmark. If this parameter is set to `0`, the benchmark will consider all files regardless of their size. **Default value**: `0`   
 
 The benchmark expects the input formulas to be in `.smt2` format located in the `benchmark` directory. In case that directory contains subdirectories, they will be traversed recursively. During benchmarking, the following data is written to the `benchmark_results` directory:
-* Current statistical data, in (numpy) `.npz` file format. The files are prefixed by the iteration number after which the data was exported.
+* Current statistical data, in (numpy) `.npz` file format. The files are prefixed by the iteration number, after which the data was exported.
 * Logs are written to the `benchmark.log` file. In linux, they can be viewed live by running `tail -f benchmark.log`.
 
 After benchmarking is complete, the final statistical data is also exported in the `.npz` format. The next section explains how to use this data. 
@@ -135,7 +135,7 @@ The benchmark was run with the following parameters:
 * Z3 timeout: 16000 ms = 16 seconds
 * File size limit: 1000 KB = 1 MB
 
-This table illustrates how many times each monadic decomposition method was run and what the error/success rate was:
+This table illustrates how many times each monadic decomposition method was run and what the corresponding error/success rate was:
 
 | Monadic decomposition |   With bound    |  Without bound  |
 | :-------------------: | :-------------: | :-------------: |
@@ -143,7 +143,7 @@ This table illustrates how many times each monadic decomposition method was run 
 |   Succeeded (times)   | 3985 (≈**98%**) | 1575 (≈**40%**) |
 |    Failed (times)     |  73 (≈**2%**)   | 2410 (≈**60%**) |
 
-We can therefore conclude that the monadic decomposition method with bound is much more reliable compared to the version without the bound. We can compare the performance of both methods by considering the following plots:
+We can therefore conclude that the monadic decomposition method with the bound is much more reliable compared to the version without it. We can compare the performance of both methods by considering the following plots:
 
 ![smt2 file size and average mondec performance comparison](benchmark_results/md_file_size_r.png)
 ![average mondec performance and smt2 file size comparison](benchmark_results/md_file_size.png)
