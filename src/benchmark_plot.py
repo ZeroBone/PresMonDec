@@ -40,7 +40,7 @@ def benchmark_plot(iter_number: int):
 
     with load_npz("bound_log_count_until_inc", iter_number) as npz:
 
-        fig, ax = simple_plot(npz["x"], npz["y"])
+        fig, ax = simple_plot(npz["x"], npz["y"][0])
         ax.set_xlabel("Bit length of B")
         ax.set_ylabel("avg(max{k:decomp. with bound log^k(B) is consistent})")
 
@@ -49,7 +49,7 @@ def benchmark_plot(iter_number: int):
     with load_npz("bound_log_count_until_inc_r", iter_number) as npz:
 
         x = npz["x"]
-        y = npz["y"]
+        y = npz["y"][0]
 
         fig, ax = plt.subplots()
 
@@ -69,7 +69,7 @@ def benchmark_plot(iter_number: int):
     with load_npz("var_count_bound", iter_number) as npz:
 
         x = npz["x"]
-        y = npz["y"]
+        y = npz["y"][0]
 
         # simple version
 
@@ -137,10 +137,10 @@ def benchmark_plot(iter_number: int):
                 ax.grid(zorder=0)
 
                 x = np.array(x, dtype=float)
-                y = np.array(y, dtype=float)
+                y = np.array(y[0], dtype=float)
 
                 x_wb = np.array(x_wb, dtype=float)
-                y_wb = np.array(y_wb, dtype=float)
+                y_wb = np.array(y_wb[0], dtype=float)
 
                 with_bound = ax.scatter(x, y, alpha=.7, color="blue", zorder=3)
                 without_bound = ax.scatter(x_wb, y_wb, alpha=.5, color="red", zorder=4)
