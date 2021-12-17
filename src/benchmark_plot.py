@@ -205,7 +205,7 @@ def benchmark_plot_logk_hist():
     fig, ax = plt.subplots()
 
     labels = np.array([0, 1, 2, 3, 4])
-    counts = np.array([51, 66, 3318, 9, 541])
+    counts = np.array([int(input("Enter number of occurrences for k = %d: " % i)) for i in range(5)])
 
     bars = ax.bar(labels, counts, color="c", alpha=.7, edgecolor="k")
     ax.bar_label(bars)

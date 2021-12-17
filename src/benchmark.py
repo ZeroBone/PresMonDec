@@ -118,13 +118,23 @@ class AverageValueTracker:
         self._y_running_average_values[group_index][x_axis_index] = v + float(y), 1.0 if n < 0 else n + 1.0
 
     def save_as_npz(self, file):
+
         x_axis = np.array(self._x_axis)
+
         y_groups = np.array([
             np.array([v / n for v, n in y_running_average_values])
             for y_running_average_values in self._y_running_average_values
         ])
 
-        np.savez(file, x=x_axis, y=y_groups)
+        y_groups_extended = np.array([
+            np.array([
+                [v for v, _ in y_running_average_values],
+                [n for _, n in y_running_average_values]
+            ])
+            for y_running_average_values in self._y_running_average_values
+        ])
+
+        np.savez(file, x=x_axis, y=y_groups, y_ext=y_groups_extended)
 
 
 _PERFORMANCE_GROUPS = 3
