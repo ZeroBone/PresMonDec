@@ -95,11 +95,11 @@ def benchmark_smts(file_size_limit: int = 0, z3_sat_check_timeout_ms: int = 0):
 
 class AverageValueTracker:
 
-    def __init__(self):
+    def __init__(self, number_of_groups: int = 1):
         self._x_axis = []
-        self._y_running_average_values = []
+        self._y_running_average_values = [[] for _ in range(number_of_groups)]
 
-    def add_point(self, x, y):
+    def add_point(self, x, y, group_index: int = 0):
         # using binary search, find the appropriate place
         # for the value of x on the x axis
         x_axis_index = bisect.bisect_left(self._x_axis, x)
@@ -111,16 +111,27 @@ class AverageValueTracker:
 
             # -1 is needed to prevent division by zero in case there
             # exists an x-value without a y-value
-            self._y_running_average_values[x_axis_index:x_axis_index] = [(0.0, -1.0)]
+            for group in range(len(self._y_running_average_values)):
+                self._y_running_average_values[group][x_axis_index:x_axis_index] = [(0.0, -1.0)]
 
-        v, n = self._y_running_average_values[x_axis_index]
-        self._y_running_average_values[x_axis_index] = v + float(y), 1.0 if n < 0 else n + 1.0
+        v, n = self._y_running_average_values[group_index][x_axis_index]
+        self._y_running_average_values[group_index][x_axis_index] = v + float(y), 1.0 if n < 0 else n + 1.0
 
     def save_as_npz(self, file):
         x_axis = np.array(self._x_axis)
-        y_axis = np.array([v / n for v, n in self._y_running_average_values])
+        y_groups = np.array([
+            np.array([v / n for v, n in y_running_average_values])
+            for y_running_average_values in self._y_running_average_values
+        ])
 
-        np.savez(file, x=x_axis, y=y_axis)
+        np.savez(file, x=x_axis, y=y_groups)
+
+
+_PERFORMANCE_GROUPS = 3
+
+PERFORMANCE_GROUP_GENERAL = 0
+PERFORMANCE_GROUP_DECOMPOSABLE = 1
+PERFORMANCE_GROUP_NON_DECOMPOSABLE = 2
 
 
 class BenchmarkContext:
@@ -143,17 +154,17 @@ class BenchmarkContext:
 
         self._var_count_bound = AverageValueTracker()
 
-        self._md_wb_var_count = AverageValueTracker()
-        self._md_wb_var_count_r = AverageValueTracker()
+        self._md_wb_var_count = AverageValueTracker(_PERFORMANCE_GROUPS)
+        self._md_wb_var_count_r = AverageValueTracker(_PERFORMANCE_GROUPS)
 
-        self._md_wb_file_size = AverageValueTracker()
-        self._md_wb_file_size_r = AverageValueTracker()
+        self._md_wb_file_size = AverageValueTracker(_PERFORMANCE_GROUPS)
+        self._md_wb_file_size_r = AverageValueTracker(_PERFORMANCE_GROUPS)
 
-        self._md_var_count = AverageValueTracker()
-        self._md_var_count_r = AverageValueTracker()
+        self._md_var_count = AverageValueTracker(_PERFORMANCE_GROUPS)
+        self._md_var_count_r = AverageValueTracker(_PERFORMANCE_GROUPS)
 
-        self._md_file_size = AverageValueTracker()
-        self._md_file_size_r = AverageValueTracker()
+        self._md_file_size = AverageValueTracker(_PERFORMANCE_GROUPS)
+        self._md_file_size_r = AverageValueTracker(_PERFORMANCE_GROUPS)
 
         self._bound_log_count_until_inconsistent = AverageValueTracker()
         self._bound_log_count_until_inconsistent_r = AverageValueTracker()
@@ -188,7 +199,7 @@ class BenchmarkContext:
 
         self._var_count_bound.add_point(self._cur_phi_var_count, bound_bit_length)
 
-    def report_md_perf(self, nanos, without_bound: bool):
+    def report_md_perf(self, nanos, without_bound: bool, decomposable: bool = None):
 
         self._assert_formula_variable_state_defined()
 
@@ -200,6 +211,8 @@ class BenchmarkContext:
                 self._md_fail_counter += 1
 
             return
+
+        assert decomposable is not None
 
         ms = nanos // 1000000
 
@@ -214,11 +227,26 @@ class BenchmarkContext:
             self._md_file_size_r
         )
 
-        md_var_count.add_point(ms, self._cur_phi_var_count)
-        md_var_count_r.add_point(self._cur_phi_var_count, ms)
+        md_var_count.add_point(ms, self._cur_phi_var_count, PERFORMANCE_GROUP_GENERAL)
+        md_var_count_r.add_point(self._cur_phi_var_count, ms, PERFORMANCE_GROUP_GENERAL)
 
-        md_file_size.add_point(ms, self._cur_smt_file_size)
-        md_file_size_r.add_point(self._cur_smt_file_size, ms)
+        md_file_size.add_point(ms, self._cur_smt_file_size, PERFORMANCE_GROUP_GENERAL)
+        md_file_size_r.add_point(self._cur_smt_file_size, ms, PERFORMANCE_GROUP_GENERAL)
+
+        # add points to either the group of performance values for formulas which were decomposable
+        # or to the group corresponding to performance values of non-decomposable formulas
+
+        group = PERFORMANCE_GROUP_DECOMPOSABLE if decomposable \
+            else PERFORMANCE_GROUP_NON_DECOMPOSABLE
+
+        md_var_count.add_point(ms, self._cur_phi_var_count, group)
+        md_var_count_r.add_point(self._cur_phi_var_count, ms, group)
+
+        md_file_size.add_point(ms, self._cur_smt_file_size, group)
+        md_file_size_r.add_point(self._cur_smt_file_size, ms, group)
+
+        # lastly, keep track of how many successful decompositions there were
+        # for each method
 
         if without_bound:
             self._md_wb_counter += 1
@@ -341,7 +369,8 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5,
 
                 ctx.report_md_perf(
                     bound_b_computation_time + end_nanos - start_nanos,
-                    False
+                    False,
+                    dec
                 )
             except Z3CliError as e:
                 logger.error("z3 cli error: %s", str(e))
@@ -383,7 +412,7 @@ def run_benchmark(iter_limit=0, vars_per_formula_limit=5,
                 dec_without_bound = monadic_decomposable_without_bound(phi, phi_var, timeout_ms=z3_timeout_ms)
                 end_nanos = time.perf_counter_ns()
 
-                ctx.report_md_perf(end_nanos - start_nanos, True)
+                ctx.report_md_perf(end_nanos - start_nanos, True, dec_without_bound)
             except Z3CliError as e:
                 logger.error("z3 cli error: %s", str(e))
                 continue
