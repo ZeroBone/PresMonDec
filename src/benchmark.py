@@ -137,7 +137,7 @@ class AverageValueTracker:
         np.savez(file, x=x_axis, y=y_groups, y_ext=y_groups_extended)
 
 
-_PERFORMANCE_GROUPS = 3
+PERFORMANCE_GROUPS = 3
 
 PERFORMANCE_GROUP_GENERAL = 0
 PERFORMANCE_GROUP_DECOMPOSABLE = 1
@@ -164,17 +164,17 @@ class BenchmarkContext:
 
         self._var_count_bound = AverageValueTracker()
 
-        self._md_wb_var_count = AverageValueTracker(_PERFORMANCE_GROUPS)
-        self._md_wb_var_count_r = AverageValueTracker(_PERFORMANCE_GROUPS)
+        self._md_wb_var_count = AverageValueTracker(PERFORMANCE_GROUPS)
+        self._md_wb_var_count_r = AverageValueTracker(PERFORMANCE_GROUPS)
 
-        self._md_wb_file_size = AverageValueTracker(_PERFORMANCE_GROUPS)
-        self._md_wb_file_size_r = AverageValueTracker(_PERFORMANCE_GROUPS)
+        self._md_wb_file_size = AverageValueTracker(PERFORMANCE_GROUPS)
+        self._md_wb_file_size_r = AverageValueTracker(PERFORMANCE_GROUPS)
 
-        self._md_var_count = AverageValueTracker(_PERFORMANCE_GROUPS)
-        self._md_var_count_r = AverageValueTracker(_PERFORMANCE_GROUPS)
+        self._md_var_count = AverageValueTracker(PERFORMANCE_GROUPS)
+        self._md_var_count_r = AverageValueTracker(PERFORMANCE_GROUPS)
 
-        self._md_file_size = AverageValueTracker(_PERFORMANCE_GROUPS)
-        self._md_file_size_r = AverageValueTracker(_PERFORMANCE_GROUPS)
+        self._md_file_size = AverageValueTracker(PERFORMANCE_GROUPS)
+        self._md_file_size_r = AverageValueTracker(PERFORMANCE_GROUPS)
 
         self._bound_log_count_until_inconsistent = AverageValueTracker()
         self._bound_log_count_until_inconsistent_r = AverageValueTracker()

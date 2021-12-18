@@ -5,7 +5,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
-from benchmark import resolve_benchmark_result_root
+from benchmark import resolve_benchmark_result_root, \
+    PERFORMANCE_GROUPS, \
+    PERFORMANCE_GROUP_GENERAL, \
+    PERFORMANCE_GROUP_DECOMPOSABLE, \
+    PERFORMANCE_GROUP_NON_DECOMPOSABLE
 
 
 def load_npz(suffix: str, iter_number: int):
@@ -115,89 +119,102 @@ def benchmark_plot(iter_number: int):
                 load_npz("md_%s_r" % subject, iter_number) as subject_md,\
                 load_npz("md_wb_%s_r" % subject, iter_number) as subject_md_wb:
 
-            fig_s_md, ax_s_md = plt.subplots()
-            fig_md_s, ax_md_s = plt.subplots()
+            for group in range(PERFORMANCE_GROUPS):
 
-            for ax, x, y, x_wb, y_wb in [
-                (
-                    ax_s_md,
-                    subject_md["x"],
-                    subject_md["y"],
-                    subject_md_wb["x"],
-                    subject_md_wb["y"]
-                ),
-                (
-                    ax_md_s,
-                    md_subject["x"],
-                    md_subject["y"],
-                    md_wb_subject["x"],
-                    md_wb_subject["y"]
-                )
-            ]:
-                ax.grid(zorder=0)
+                fig_s_md, ax_s_md = plt.subplots()
+                fig_md_s, ax_md_s = plt.subplots()
 
-                x = np.array(x, dtype=float)
-                y = np.array(y[0], dtype=float)
+                for ax, x, y, x_wb, y_wb in [
+                    (
+                        ax_s_md,
+                        subject_md["x"],
+                        subject_md["y"],
+                        subject_md_wb["x"],
+                        subject_md_wb["y"]
+                    ),
+                    (
+                        ax_md_s,
+                        md_subject["x"],
+                        md_subject["y"],
+                        md_wb_subject["x"],
+                        md_wb_subject["y"]
+                    )
+                ]:
+                    ax.grid(zorder=0)
 
-                x_wb = np.array(x_wb, dtype=float)
-                y_wb = np.array(y_wb[0], dtype=float)
+                    x = np.array(x, dtype=float)
+                    y = np.array(y[group], dtype=float)
 
-                with_bound = ax.scatter(x, y, alpha=.7, color="blue", zorder=3)
-                without_bound = ax.scatter(x_wb, y_wb, alpha=.5, color="red", zorder=4)
+                    x_wb = np.array(x_wb, dtype=float)
+                    y_wb = np.array(y_wb[group], dtype=float)
 
-                ax.legend(
-                    (with_bound, without_bound),
-                    ("With bound", "Without bound"),
-                    loc="upper left"
-                )
+                    with_bound = ax.scatter(x, y, alpha=.7, color="blue", zorder=3)
+                    without_bound = ax.scatter(x_wb, y_wb, alpha=.5, color="red", zorder=4)
 
-            if subject == "file_size":
+                    ax.legend(
+                        (with_bound, without_bound),
+                        ("With bound", "Without bound"),
+                        loc="upper left"
+                    )
 
-                # subject to performance axis
+                if group == PERFORMANCE_GROUP_GENERAL:
+                    suffix = ""
+                    perf = "decomposition performance"
+                elif group == PERFORMANCE_GROUP_DECOMPOSABLE:
+                    suffix = "_dec"
+                    perf = "decomposable proving performance"
+                else:
+                    assert group == PERFORMANCE_GROUP_NON_DECOMPOSABLE
+                    suffix = "_nondec"
+                    perf = "non-decomposable proving performance"
 
-                ax_s_md.set_xlabel(".smt2 file size (bytes)")
-                ax_s_md.set_ylabel("Average monadic decomposition performance (seconds)")
+                if subject == "file_size":
 
-                ax_s_md.yaxis.set_major_formatter(div_by_1000_and_round)
-                ax_s_md.yaxis.set_minor_formatter(div_by_1000_and_round)
+                    # subject to performance axis
 
-                ax_s_md.set_xscale("log")
+                    ax_s_md.set_xlabel(".smt2 file size (bytes)")
+                    ax_s_md.set_ylabel("Average %s (seconds)" % perf)
 
-                # performance to subject axis
+                    ax_s_md.yaxis.set_major_formatter(div_by_1000_and_round)
+                    ax_s_md.yaxis.set_minor_formatter(div_by_1000_and_round)
 
-                ax_md_s.set_xlabel("monadic decomposition performance (seconds)")
-                ax_md_s.set_ylabel("Average .smt2 file size (bytes)")
+                    ax_s_md.set_xscale("log")
 
-                ax_md_s.xaxis.set_major_formatter(div_by_1000_and_round)
-                ax_md_s.xaxis.set_minor_formatter(div_by_1000_and_round)
+                    # performance to subject axis
 
-                ax_md_s.set_yscale("log")
+                    ax_md_s.set_xlabel("%s (seconds)" % perf)
+                    ax_md_s.set_ylabel("Average .smt2 file size (bytes)")
 
-            else:
-                assert subject == "var_count"
+                    ax_md_s.xaxis.set_major_formatter(div_by_1000_and_round)
+                    ax_md_s.xaxis.set_minor_formatter(div_by_1000_and_round)
 
-                # subject to performance axis
+                    ax_md_s.set_yscale("log")
 
-                ax_s_md.set_xlabel("Variable count")
-                ax_s_md.set_ylabel("Average monadic decomposition performance (seconds)")
+                else:
+                    assert subject == "var_count"
 
-                ax_s_md.yaxis.set_major_formatter(div_by_1000_and_round)
-                ax_s_md.yaxis.set_minor_formatter(div_by_1000_and_round)
+                    # subject to performance axis
 
-                ax_s_md.set_xscale("log")
+                    ax_s_md.set_xlabel("Variable count")
+                    ax_s_md.set_ylabel("Average %s (seconds)" % perf)
 
-                # performance to subject axis
+                    ax_s_md.yaxis.set_major_formatter(div_by_1000_and_round)
+                    ax_s_md.yaxis.set_minor_formatter(div_by_1000_and_round)
 
-                ax_md_s.set_xlabel("monadic decomposition performance (seconds)")
-                ax_md_s.set_ylabel("Average variable count")
+                    ax_s_md.set_xscale("log")
 
-                ax_md_s.xaxis.set_major_formatter(div_by_1000_and_round)
-                ax_md_s.xaxis.set_minor_formatter(div_by_1000_and_round)
+                    # performance to subject axis
 
-                ax_md_s.set_yscale("log")
+                    ax_md_s.set_xlabel("%s (seconds)" % perf)
+                    ax_md_s.set_ylabel("Average variable count")
 
-            save_as_img(fig_s_md, "md_%s_r" % subject)
-            save_as_img(fig_md_s, "md_%s" % subject)
+                    ax_md_s.xaxis.set_major_formatter(div_by_1000_and_round)
+                    ax_md_s.xaxis.set_minor_formatter(div_by_1000_and_round)
+
+                    ax_md_s.set_yscale("log")
+
+                save_as_img(fig_s_md, "md_%s_r%s" % (subject, suffix))
+                save_as_img(fig_md_s, "md_%s%s" % (subject, suffix))
 
 
 def benchmark_plot_logk_hist():

@@ -130,7 +130,7 @@ Following results were obtained by running the benchmark on the entire [QF_LIA d
 
 The benchmark was run with the following parameters:
 * No iteration limit
-* Each formula was monadically decomposed on 2 variables (i.e. `[VARS_PER_FORMULA_LIMIT]` was set to 2)
+* Each formula was monadically decomposed on 3 variables (i.e. `[VARS_PER_FORMULA_LIMIT]` was set to 3)
 * Sat check timeout: 2000 ms = 2 seconds
 * Z3 timeout: 16000 ms = 16 seconds
 * File size limit: 1000 KB = 1 MB
@@ -139,9 +139,9 @@ This table illustrates how many times each monadic decomposition method was run 
 
 | Monadic decomposition |   With bound    |  Without bound  |
 | :-------------------: | :-------------: | :-------------: |
-|   Executed (times)    |      4058       |      3985       |
-|   Succeeded (times)   | 3985 (≈**98%**) | 1575 (≈**40%**) |
-|    Failed (times)     |  73 (≈**2%**)   | 2410 (≈**60%**) |
+|   Executed (times)    |      4398       |      4331       |
+|   Succeeded (times)   | 4331 (≈**98%**) | 1964 (≈**45%**) |
+|    Failed (times)     |  67 (≈**2%**)   | 2367 (≈**55%**) |
 
 We can therefore conclude that the monadic decomposition method with the bound is much more reliable compared to the version without it. We can compare the performance of both methods by considering the following plots:
 
@@ -156,7 +156,7 @@ The amount of variables seems to have some correlation with the average bit leng
 ![variable count and bitlength of bound comparison](benchmark_results/var_count_bound_simple.png)
 ![variable count and bitlength of bound comparison](benchmark_results/var_count_bound.png)
 
-This plot clearly demonstrates that in the vast majority of cases, `B` is significantly larger compared to the real (tight) bound which would suffice. More precisely, in more than 97% of cases, we can reduce `B` to `log(log(B))` and obtain a consistent monadic decomposability result. And in more than 13% of cases, `B` can be even reduced to `log(log(log(log(B))))`.
+This plot clearly demonstrates that in the vast majority of cases, `B` is significantly larger compared to the real (tight) bound which would suffice. More precisely, in more than 97% of cases, we can reduce `B` to `log(log(B))` and obtain a consistent monadic decomposability result. And in more than 18% of cases, `B` can be even reduced to `log(log(log(log(B))))`.
 
 ![analysis of how efficient the bound is](benchmark_results/log_count_until_inc_dist.png)
 
