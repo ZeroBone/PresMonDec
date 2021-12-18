@@ -147,9 +147,19 @@ We can therefore conclude that the monadic decomposition method with the bound i
 
 ![smt2 file size and average mondec performance comparison](benchmark_results/md_file_size_r.png)
 ![average mondec performance and smt2 file size comparison](benchmark_results/md_file_size.png)
+![smt2 file size and average mondec performance comparison](benchmark_results/md_file_size_r_dec.png)
+![average mondec performance and smt2 file size comparison](benchmark_results/md_file_size_dec.png)
+![smt2 file size and average mondec performance comparison](benchmark_results/md_file_size_r_nondec.png)
+![average mondec performance and smt2 file size comparison](benchmark_results/md_file_size_nondec.png)
+
+The following plots illustrate the correlation between the number of variables and the performance:
 
 ![variable count and average mondec performance comparison](benchmark_results/md_var_count_r.png)
 ![average mondec performance and variable count comparison](benchmark_results/md_var_count.png)
+![variable count and average mondec performance comparison](benchmark_results/md_var_count_r_dec.png)
+![average mondec performance and variable count comparison](benchmark_results/md_var_count_dec.png)
+![variable count and average mondec performance comparison](benchmark_results/md_var_count_r_nondec.png)
+![average mondec performance and variable count comparison](benchmark_results/md_var_count_nondec.png)
 
 The amount of variables seems to have some correlation with the average bit length of the bound `B`:
 
