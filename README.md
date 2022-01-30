@@ -120,7 +120,7 @@ After benchmarking is complete, the final statistical data is also exported in t
 
 Once the benchmark is complete, the plots can be produced from the `.npz` files by running
 ```
-benchmark_plot.py [ITER_NUMBER]
+python benchmark_plot.py [ITER_NUMBER]
 ```
 where `[ITER_NUMBER]` is the iteration number, which is the prefix of the `.npz` files containing data collected by the benchmark up to that iteration. Plotting will fail if there are no `.npz` files produced by the benchmark for the specified iteration number.
 
